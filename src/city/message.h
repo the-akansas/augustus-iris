@@ -245,6 +245,8 @@ void city_message_mark_read(int message_id);
 void city_message_delete(int message_id);
 
 int city_message_count(void);
+int city_message_has_capacity(void);
+void city_message_pin_chat(int custom_id,int unread);
 
 int city_message_problem_area_count(void);
 

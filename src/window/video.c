@@ -38,7 +38,7 @@ static void draw_foreground(void)
 
 static void handle_input(const mouse *m, const hotkeys *h)
 {
-    if (m->left.went_up || m->right.went_up || video_is_finished()) {
+    if (m->left.went_up || m->right.went_up || h->enter_pressed || h->close_pressed || video_is_finished()) {
         video_stop();
         system_show_cursor();
         data.callback();

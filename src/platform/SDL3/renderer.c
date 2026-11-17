@@ -307,7 +307,7 @@ static const image_atlas_data *prepare_texture_atlas(atlas_type type, int num_im
     atlas_data->num_images = num_images;
     atlas_data->image_widths = malloc(sizeof(int) * num_images);
     atlas_data->image_heights = malloc(sizeof(int) * num_images);
-    atlas_data->buffers = malloc(sizeof(color_t *) * num_images);
+    atlas_data->buffers = calloc(num_images, sizeof(color_t *));
     if (!atlas_data->image_widths || !atlas_data->image_heights || !atlas_data->buffers) {
         reset_atlas_data(type);
         return 0;
@@ -416,7 +416,7 @@ static const image_atlas_data *get_texture_atlas(atlas_type type)
 
 static void free_all_textures(void)
 {
-    for (atlas_type i = ATLAS_FIRST; i < ATLAS_MAX - 1; i++) {
+    for (atlas_type i = ATLAS_FIRST; i < ATLAS_MAX; i++) {
         free_texture_atlas_and_data(i);
     }
     for (int i = 0; i < CUSTOM_IMAGE_MAX; i++) {
@@ -452,7 +452,7 @@ static void free_all_textures(void)
 
 static SDL_Texture *get_texture(int texture_id)
 {
-    atlas_type type = texture_id >> IMAGE_ATLAS_BIT_OFFSET;
+    atlas_type type = (unsigned) texture_id >> IMAGE_ATLAS_BIT_OFFSET;
     if (type == ATLAS_CUSTOM) {
         return data.custom_textures[texture_id & IMAGE_ATLAS_BIT_MASK].texture;
     } else if (type == ATLAS_EXTERNAL) {

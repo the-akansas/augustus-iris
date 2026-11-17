@@ -1,3 +1,6 @@
+#include <string.h>
+#include "multiplayer/chat.h"
+#include "window/multiplayer_chat.h"
 #include "message_dialog.h"
 
 #include "city/emperor.h"
@@ -177,6 +180,7 @@ static void setup_custom_lang_message(int text_id)
     data.custom_lang_message.urgent = 0;
 
     data.custom_msg = custom_messages_get(text_id);
+    rich_text_set_literal(data.custom_msg->linked_uid && !strncmp((const char*)data.custom_msg->linked_uid->text,"mpchat:",7));
     data.custom_lang_message.title.text = custom_messages_get_title(data.custom_msg);
     data.custom_lang_message.subtitle.text = custom_messages_get_subtitle(data.custom_msg);
     data.custom_lang_message.content.text = custom_messages_get_text(data.custom_msg);
@@ -988,6 +992,7 @@ void window_message_dialog_show_city_message(int text_id, int year, int month,
 
 void window_message_dialog_show_custom_message(int custom_message_id, int year, int month)
 {
+    if(mp_chat_is_inbox(custom_message_id)){window_multiplayer_chat_history_show();return;}
     set_city_message(year, month, custom_message_id, 0, MESSAGE_ADVISOR_NONE, 1);
     if (!editor_is_active()) {
         init_window(custom_message_id, 1, window_city_draw_all);

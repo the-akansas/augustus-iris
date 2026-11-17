@@ -1,4 +1,5 @@
 #include "victory.h"
+#include "multiplayer/clock.h"
 
 #include "building/construction.h"
 #include "city/data_private.h"
@@ -121,6 +122,12 @@ static int determine_victory_state(void)
 
 void city_victory_check(void)
 {
+    /* Multiplayer is endless free build. Do not mutate the saved campaign goals. */
+    if (mp_clock_active()) {
+        data.state = VICTORY_STATE_NONE;
+        data.force_win = data.force_lose = 0;
+        return;
+    }
     if (scenario_is_open_play() && !data.force_win && !data.force_lose) {
         return;
     }
@@ -162,6 +169,7 @@ void city_victory_check(void)
 
 void city_victory_update_months_to_govern(void)
 {
+    if (mp_clock_active()) return;
     if (city_data.mission.has_won) {
         city_data.mission.continue_months_left--;
     }

@@ -18,6 +18,14 @@ enum {
 static mouse data;
 static mouse dialog;
 static time_millis last_click;
+static int middle_click_pending;
+static int middle_click_x, middle_click_y;
+static key_modifier_type middle_click_modifiers;
+
+void mouse_cancel_middle_click(void)
+{
+    middle_click_pending = 0;
+}
 
 const mouse *mouse_get(void)
 {
@@ -68,6 +76,10 @@ void mouse_remove_touch(void)
 
 void mouse_set_position(int x, int y)
 {
+    if (middle_click_pending && (x - middle_click_x > 4 || middle_click_x - x > 4 ||
+        y - middle_click_y > 4 || middle_click_y - y > 4)) {
+        mouse_cancel_middle_click();
+    }
     if (x != data.x || y != data.y) {
         last_click = 0;
     }
@@ -106,9 +118,17 @@ void mouse_set_middle_down(int down)
     data.is_inside_window = 1;
     last_click = 0;
     if (down) {
-        hotkey_key_pressed(KEY_TYPE_MIDDLE_MOUSE_BUTTON, hotkey_get_modifiers(), 0);
+        middle_click_pending = 1;
+        middle_click_x = data.x;
+        middle_click_y = data.y;
+        middle_click_modifiers = hotkey_get_modifiers();
     } else {
-        hotkey_key_released(KEY_TYPE_MIDDLE_MOUSE_BUTTON, hotkey_get_modifiers());
+        /* Dispatch a click only on release, so map dragging never fires the zoom-reset hotkey. */
+        if (middle_click_pending) {
+            hotkey_key_pressed(KEY_TYPE_MIDDLE_MOUSE_BUTTON, middle_click_modifiers, 0);
+            hotkey_key_released(KEY_TYPE_MIDDLE_MOUSE_BUTTON, middle_click_modifiers);
+        }
+        mouse_cancel_middle_click();
     }
 }
 
@@ -123,12 +143,14 @@ void mouse_set_right_down(int down)
 
 void mouse_set_inside_window(int inside)
 {
+    if (!inside) { mouse_cancel_middle_click(); }
     data.is_inside_window = inside;
     data.is_touch = 0;
 }
 
 void mouse_set_window_focus(int focus)
 {
+    if (!focus) { mouse_cancel_middle_click(); }
     data.window_has_focus = focus;
 }
 

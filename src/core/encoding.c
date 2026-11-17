@@ -5,6 +5,7 @@
 #include "core/encoding_simp_chinese.h"
 #include "core/encoding_trad_chinese.h"
 #include "core/locale.h"
+#include "core/mp_i18n.h"
 #include "core/string.h"
 
 #include <stdlib.h>
@@ -928,6 +929,11 @@ static int is_ascii(const char *utf8_char)
 
 int encoding_can_display(const char *utf8_char)
 {
+    if (data.encoding == ENCODING_KOREAN && !is_ascii(utf8_char)) {
+        uint8_t converted[4];
+        encoding_korean_from_utf8(utf8_char, converted, sizeof(converted));
+        return converted[0] >= 0x80;
+    }
     return is_ascii(utf8_char) || get_letter_code_for_utf8(utf8_char, NULL, NULL) != NULL;
 }
 
@@ -983,6 +989,9 @@ void encoding_to_utf8(const uint8_t *input, char *output, int output_length, int
 
 void encoding_from_utf8(const char *input, uint8_t *output, int output_length)
 {
+    /* Multilingual: the Korean texts we added are keys; show the reader's language (core/mp_i18n.c). No catalog:
+       unchanged. Original game and Augustus texts never reach here as Korean keys unless they are ours. */
+    input = mp_i18n_translate(input);
     if (!data.to_utf8_table) {
         if (data.encoding == ENCODING_KOREAN) {
             encoding_korean_from_utf8(input, output, output_length);

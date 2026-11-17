@@ -10,6 +10,7 @@ void window_city_draw_panels(void);
 void window_city_draw(void);
 
 void window_city_show(void);
+int window_city_visit_load(void);
 
 void window_city_military_show(int legion_formation_id);
 int window_city_simulated_weather(weather_type weather);
@@ -19,5 +20,11 @@ void window_city_return(void);
 /** @brief collective check to see if the current window is any of the city view windows */
 int window_city_is_window_cityview(void);
 void window_city_draw_custom_variables_text_display(void);
+
+
+int window_city_visit_ui_active(void);
+void window_city_visit_show(int name_id);
+int window_city_visit_worker_step(void);
+void window_city_visit_ui_hide(void);
 
 #endif // WINDOW_CITY_H

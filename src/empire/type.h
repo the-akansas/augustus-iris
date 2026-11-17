@@ -22,6 +22,7 @@ typedef enum {
     EMPIRE_CITY_DISTANT_FOREIGN = 4,
     EMPIRE_CITY_VULNERABLE_ROMAN = 5,
     EMPIRE_CITY_FUTURE_ROMAN = 6,
+    EMPIRE_CITY_PLAYER = 7, // Multiplayer peer: no automatic AI trade.
 } empire_city_type;
 
 typedef enum {

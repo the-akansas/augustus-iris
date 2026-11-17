@@ -1,3 +1,4 @@
+#include "building/tile_repair.h"
 #include "construction_clear.h"
 
 #include "building/building.h"
@@ -38,7 +39,7 @@ static struct {
     int monument_confirmed;
     int repair_confirmed;
     int repair_cost;
-    int repairable_buildings[1000];
+    int repairable_buildings[MAX_SLICE_SIZE];
 } confirm;
 
 static building *get_deletable_building(int grid_offset)
@@ -251,9 +252,10 @@ static unsigned int clear_land_confirmed(int x_start, int y_start, int x_end, in
                             } else if (rubble_building->state == BUILDING_STATE_UNUSED) {
                                 // intentional fallthrough - unused buildings are corrupt if they exist on the grid.
                                 // dont change state, just remove reference on the grid - addressed after if {} block
-                            } else {
-                                rubble_building->state = BUILDING_STATE_DELETED_BY_GAME;
                             }
+                            /* A rubble marker that points at anything else is stale (its number was reused by a
+                             * new building): removing the marker is all. Deleting that building left its tiles
+                             * behind - black, and a crash later (2026-11-14). */
                         }
                     }
                 }
@@ -400,7 +402,10 @@ static int was_building_counted(int building_id, int count_of_processed)
 
 static int repair_land_confirmed(int measure_only, int x_start, int y_start, int x_end, int y_end, int *buildings_count)
 {
-    grid_slice *slice = map_grid_get_grid_slice_from_corners(x_start, y_start, x_end, y_end);
+    /* Cost/repair calls allocate more slices from the 100-entry ring pool.
+     * Own this selection so those calls cannot replace it during iteration. */
+    grid_slice selection = *map_grid_get_grid_slice_from_corners(x_start, y_start, x_end, y_end);
+    const grid_slice *slice = &selection;
     int repairable_buildings = 0;
     int repair_cost = 0;
     // Measure phase - count buildings and calculate cost
@@ -456,6 +461,9 @@ static void confirm_repair_buildings(int accepted, int checked)
 
 int building_construction_repair_land(int measure_only, int x_start, int y_start, int x_end, int y_end, int *buildings_count)
 {
+    if (!measure_only) {
+        building_tile_repair_all();
+    }
     confirm.repair_confirmed = 0;
     memset(confirm.repairable_buildings, 0, sizeof(confirm.repairable_buildings)); // reset the array
     if (measure_only) {

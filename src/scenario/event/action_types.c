@@ -264,7 +264,9 @@ int scenario_action_type_invasion_immediate_execute(scenario_action_t *action)
     if (invasion_point < 0 || invasion_point > MAX_INVASION_POINTS) {
         return 0;
     }
-    if (enemy_id < ENEMY_UNDEFINED || enemy_id >= ENEMY_MAX) {
+    // An enemy id (0..19, the people of scenario/invasion.c ENEMY_ID_TO_ENEMY_TYPE), not an enemy type: ids 12..19
+    // (Gauls ... Judaeans) used to fall back to the scenario's people here (multiplayer 2026-11-15).
+    if (enemy_id < ENEMY_UNDEFINED || enemy_id >= 20) {
         enemy_id = ENEMY_UNDEFINED;
     }
 

@@ -209,7 +209,7 @@ void figure_route_advance_tile(int path_id)
 void figure_route_save_state(buffer *figures, buffer *buf_paths)
 {
     unsigned int size = paths.size * sizeof(uint32_t);
-    uint8_t *buf_data = malloc(size);
+    uint8_t *buf_data = calloc(1, size);
     buffer_init(figures, buf_data, size);
 
     unsigned int paths_memory_size = 0;
@@ -220,7 +220,7 @@ void figure_route_save_state(buffer *figures, buffer *buf_paths)
     }
 
     size = sizeof(uint32_t) + paths_memory_size;
-    buf_data = malloc(size);
+    buf_data = calloc(1, size);
     buffer_init(buf_paths, buf_data, size);
     buffer_write_u32(buf_paths, paths.size);
 

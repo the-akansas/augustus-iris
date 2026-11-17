@@ -260,7 +260,7 @@ void building_monument_reset_stages(void)
 void building_monument_save_stages(buffer *buf)
 {
     int buf_size = sizeof(monument_type) * TOTAL_MONUMENTS;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(1, buf_size);
     buffer_init(buf, buf_data, buf_size);
     buffer_write_raw(buf, MONUMENT_TYPES, buf_size);
 }
@@ -884,7 +884,7 @@ static void delivery_load(buffer *buf, monument_delivery *delivery, int size)
 void building_monument_delivery_save_state(buffer *buf)
 {
     int buf_size = 4 + monument_deliveries.size * ORIGINAL_DELIVERY_BUFFER_SIZE;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(1, buf_size);
     buffer_init(buf, buf_data, buf_size);
     buffer_write_i32(buf, ORIGINAL_DELIVERY_BUFFER_SIZE);
 

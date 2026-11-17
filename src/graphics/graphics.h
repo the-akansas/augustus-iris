@@ -9,6 +9,8 @@ void graphics_reset_dialog(void);
 
 void graphics_set_clip_rectangle(int x, int y, int width, int height);
 void graphics_reset_clip_rectangle(void);
+void graphics_push_outer_clip(int x, int y, int width, int height);
+void graphics_pop_outer_clip(void);
 
 void graphics_clear_screen(void);
 

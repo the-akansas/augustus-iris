@@ -13,6 +13,7 @@
 #include "platform/vita/vita.h"
 
 #include "SDL.h"
+#include "sharp_scale.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -74,6 +75,11 @@ typedef struct silhouette_texture {
 static struct {
     SDL_Renderer *renderer;
     SDL_Texture *render_texture;
+    float output_scale;
+    SDL_Texture *city_texture;
+    SDL_Texture *city_sharp_texture;
+    int drawing_city_layer;
+    SDL_Texture *sharp_texture;
     int is_software_renderer;
     int paused;
     struct {
@@ -122,14 +128,165 @@ static struct {
     int disable_linear_filter;
 } data;
 
+/* SDL restores window state when switching targets, not per-texture UI density. */
+static int set_render_target(SDL_Texture *target)
+{
+    int result = SDL_SetRenderTarget(data.renderer, target);
+    if (!result && target && target == data.render_texture) {
+        SDL_RenderSetScale(data.renderer, data.output_scale, data.output_scale);
+    }
+    return result;
+}
+typedef struct {
+    SDL_Texture *target;
+    float scale_x, scale_y;
+    SDL_Rect viewport, clip;
+    SDL_bool clip_enabled;
+} render_state;
+
+static render_state save_render_state(void)
+{
+    render_state state;
+    state.target = SDL_GetRenderTarget(data.renderer);
+    SDL_RenderGetScale(data.renderer, &state.scale_x, &state.scale_y);
+    SDL_RenderGetViewport(data.renderer, &state.viewport);
+    SDL_RenderGetClipRect(data.renderer, &state.clip);
+    state.clip_enabled = SDL_RenderIsClipEnabled(data.renderer);
+    return state;
+}
+
+static void restore_render_state(const render_state *state)
+{
+    SDL_SetRenderTarget(data.renderer, state->target);
+    SDL_RenderSetScale(data.renderer, state->scale_x, state->scale_y);
+    SDL_RenderSetViewport(data.renderer, &state->viewport);
+    SDL_RenderSetClipRect(data.renderer, state->clip_enabled ? &state->clip : NULL);
+}
+
+static void reset_target_state(void)
+{
+    SDL_RenderSetScale(data.renderer, 1, 1);
+    SDL_RenderSetViewport(data.renderer, NULL);
+    SDL_RenderSetClipRect(data.renderer, NULL);
+}
+
+static render_state city_render_state;
+
+static void begin_city_layer(void)
+{
+    if (data.paused || !data.city_texture || data.drawing_city_layer) return;
+    city_render_state = save_render_state();
+    if (set_render_target(data.city_texture)) return;
+    reset_target_state();
+    /* Preserve any background behind partially transparent terrain and overlays. */
+    SDL_RenderCopy(data.renderer, city_render_state.target, NULL, NULL);
+    SDL_RenderSetViewport(data.renderer, &city_render_state.viewport);
+    SDL_RenderSetClipRect(data.renderer, city_render_state.clip_enabled ? &city_render_state.clip : NULL);
+    data.drawing_city_layer = 1;
+}
+
+static void end_city_layer(void)
+{
+    if (!data.drawing_city_layer) return;
+    SDL_Texture *source = data.city_texture;
+    if (data.city_sharp_texture && !set_render_target(data.city_sharp_texture)) {
+        reset_target_state();
+        SDL_RenderCopy(data.renderer, source, NULL, NULL);
+        source = data.city_sharp_texture;
+    }
+    restore_render_state(&city_render_state);
+    /* A full-screen source is copied with the same viewport and clip as the city pass. */
+    SDL_Rect dst = {-city_render_state.viewport.x, -city_render_state.viewport.y, screen_width(), screen_height()};
+    SDL_RenderCopy(data.renderer, source, NULL, &dst);
+    data.drawing_city_layer = 0;
+}
+
+static render_state panel_render_state;
+static SDL_Rect panel_region;
+static int transparent_panel;
+static SDL_BlendMode premultiplied_blend(void)
+{
+    return SDL_ComposeCustomBlendMode(SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD,
+        SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD);
+}
+
+static int begin_panel_layer(int x, int y, int width, int height)
+{
+    if (data.paused || !data.city_texture || data.drawing_city_layer) return 0;
+    transparent_panel = 0;
+    panel_render_state = save_render_state();
+    SDL_Rect region = {x, y, width, height};
+    if (panel_render_state.clip_enabled && !SDL_IntersectRect(&region, &panel_render_state.clip, &region)) return 0;
+    region.x += panel_render_state.viewport.x;
+    region.y += panel_render_state.viewport.y;
+    SDL_Rect screen = {0, 0, screen_width(), screen_height()};
+    if (!SDL_IntersectRect(&region, &screen, &panel_region)) return 0;
+    if (set_render_target(data.city_texture)) return 0;
+    reset_target_state();
+    SDL_Rect src = {(int)roundf(panel_region.x * data.output_scale), (int)roundf(panel_region.y * data.output_scale),
+        (int)roundf(panel_region.w * data.output_scale), (int)roundf(panel_region.h * data.output_scale)};
+    SDL_RenderCopy(data.renderer, panel_render_state.target, &src, &panel_region);
+    SDL_RenderSetViewport(data.renderer, &panel_render_state.viewport);
+    SDL_RenderSetClipRect(data.renderer, panel_render_state.clip_enabled ? &panel_render_state.clip : NULL);
+    data.drawing_city_layer = 1;
+    return 1;
+}
+
+static int begin_border_layer(int x, int y, int width, int height)
+{
+    SDL_Texture *source = data.city_sharp_texture ? data.city_sharp_texture : data.city_texture;
+    if (!source || data.drawing_city_layer) return 0;
+    int supported = SDL_SetTextureBlendMode(source, premultiplied_blend()) == 0;
+    SDL_SetTextureBlendMode(source, SDL_BLENDMODE_NONE);
+    if (!supported || !begin_panel_layer(x, y, width, height)) return 0;
+    Uint8 red, green, blue, alpha;
+    SDL_GetRenderDrawColor(data.renderer, &red, &green, &blue, &alpha);
+    SDL_SetRenderDrawColor(data.renderer, 0, 0, 0, 0);
+    SDL_RenderClear(data.renderer);
+    SDL_SetRenderDrawColor(data.renderer, red, green, blue, alpha);
+    transparent_panel = 1;
+    return 1;
+}
+
+static void end_panel_layer(void)
+{
+    SDL_Texture *source = data.city_texture;
+    SDL_Rect src = panel_region;
+    if (data.city_sharp_texture && !set_render_target(data.city_sharp_texture)) {
+        int factor = (int)ceilf(data.output_scale);
+        SDL_Rect expanded = {src.x * factor, src.y * factor, src.w * factor, src.h * factor};
+        reset_target_state();
+        SDL_RenderCopy(data.renderer, source, &src, &expanded);
+        source = data.city_sharp_texture;
+        src = expanded;
+    }
+    restore_render_state(&panel_render_state);
+    SDL_Rect dst = panel_region;
+    dst.x -= panel_render_state.viewport.x; dst.y -= panel_render_state.viewport.y;
+    if (transparent_panel) SDL_SetTextureBlendMode(source, premultiplied_blend());
+    SDL_RenderCopy(data.renderer, source, &src, &dst);
+    if (transparent_panel) SDL_SetTextureBlendMode(source, SDL_BLENDMODE_NONE);
+    data.drawing_city_layer = 0;
+}
+
 static int save_screen_buffer(color_t *pixels, int x, int y, int width, int height, int row_width)
 {
     if (data.paused) {
         return 0;
     }
     SDL_Rect rect = { x, y, width, height };
-    return SDL_RenderReadPixels(data.renderer, &rect, SDL_PIXELFORMAT_ARGB8888, pixels,
-        row_width * sizeof(color_t)) == 0;
+    render_state state = save_render_state();
+    SDL_Texture *target = state.target;
+    SDL_Texture *small = 0;
+    if (target && state.scale_x > 1.001f) {
+        small = SDL_CreateTexture(data.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, screen_width(), screen_height());
+        if (!small || set_render_target(small)) { SDL_DestroyTexture(small); return 0; }
+        reset_target_state();
+        SDL_RenderCopy(data.renderer, target, NULL, NULL);
+    }
+    int ok = SDL_RenderReadPixels(data.renderer, &rect, SDL_PIXELFORMAT_ARGB8888, pixels, row_width * sizeof(color_t)) == 0;
+    if (small) { restore_render_state(&state); SDL_DestroyTexture(small); }
+    return ok;
 }
 
 static void draw_line(int x_start, int x_end, int y_start, int y_end, color_t color)
@@ -306,7 +463,7 @@ static const image_atlas_data *prepare_texture_atlas(atlas_type type, int num_im
     atlas_data->num_images = num_images;
     atlas_data->image_widths = malloc(sizeof(int) * num_images);
     atlas_data->image_heights = malloc(sizeof(int) * num_images);
-    atlas_data->buffers = malloc(sizeof(color_t *) * num_images);
+    atlas_data->buffers = calloc(num_images, sizeof(color_t *));
     if (!atlas_data->image_widths || !atlas_data->image_heights || !atlas_data->buffers) {
         reset_atlas_data(type);
         return 0;
@@ -418,7 +575,7 @@ static const image_atlas_data *get_texture_atlas(atlas_type type)
 
 static void free_all_textures(void)
 {
-    for (atlas_type i = ATLAS_FIRST; i < ATLAS_MAX - 1; i++) {
+    for (atlas_type i = ATLAS_FIRST; i < ATLAS_MAX; i++) {
         free_texture_atlas_and_data(i);
     }
     for (int i = 0; i < CUSTOM_IMAGE_MAX; i++) {
@@ -454,7 +611,7 @@ static void free_all_textures(void)
 
 static SDL_Texture *get_texture(int texture_id)
 {
-    atlas_type type = texture_id >> IMAGE_ATLAS_BIT_OFFSET;
+    atlas_type type = (unsigned) texture_id >> IMAGE_ATLAS_BIT_OFFSET;
     if (type == ATLAS_CUSTOM) {
         return data.custom_textures[texture_id & IMAGE_ATLAS_BIT_MASK].texture;
     } else if (type == ATLAS_EXTERNAL) {
@@ -512,6 +669,20 @@ static void draw_texture_advanced(const image *img, float x, float y, color_t co
         return;
     }
 
+    if (!data.drawing_city_layer && data.output_scale > 1.001f && img->hd.id) {
+        SDL_Texture *hd = get_texture(img->hd.id);
+        if (hd) {
+            set_texture_color_and_scale_mode(hd, color, scale_x);
+#ifdef USE_TEXTURE_SCALE_MODE
+            if (HAS_TEXTURE_SCALE_MODE) SDL_SetTextureScaleMode(hd, SDL_ScaleModeLinear);
+#endif
+            SDL_Rect src = {img->hd.x, img->hd.y, img->hd.width, img->hd.height};
+            SDL_FRect dst = {(x + img->hd.dx / 4.0f) / scale_x, (y + img->hd.dy / 4.0f) / scale_y,
+                img->hd.width / (4.0f * scale_x), img->hd.height / (4.0f * scale_y)};
+            SDL_RenderCopyExF(data.renderer, hd, &src, &dst, angle, NULL, SDL_FLIP_NONE);
+            return;
+        }
+    }
     SDL_Texture *texture = get_texture(img->atlas.id);
 
     if (!texture) {
@@ -693,6 +864,8 @@ static int start_tooltip_creation(int width, int height)
     if (data.paused) {
         return 0;
     }
+    int logical_width = width, logical_height = height;
+    width = (int)ceilf(width * data.output_scale); height = (int)ceilf(height * data.output_scale);
     if (data.tooltip.texture) {
         if (data.tooltip.texture_width < width || data.tooltip.texture_height < height) {
             SDL_DestroyTexture(data.tooltip.texture);
@@ -719,10 +892,11 @@ static int start_tooltip_creation(int width, int height)
         data.tooltip.texture_width = width;
         data.tooltip.texture_height = height;
     }
-    data.tooltip.width = width;
-    data.tooltip.height = height;
-
-    return SDL_SetRenderTarget(data.renderer, data.tooltip.texture) == 0;
+    data.tooltip.width = logical_width;
+    data.tooltip.height = logical_height;
+    if (set_render_target(data.tooltip.texture)) return 0;
+    SDL_RenderSetScale(data.renderer, data.output_scale, data.output_scale);
+    return 1;
 }
 
 static void finish_tooltip_creation(void)
@@ -731,7 +905,7 @@ static void finish_tooltip_creation(void)
         return;
     }
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
-    SDL_SetRenderTarget(data.renderer, data.render_texture);
+    set_render_target(data.render_texture);
 }
 
 static int has_tooltip(void)
@@ -768,7 +942,8 @@ static int save_to_texture(int texture_id, int x, int y, int width, int height)
     if (data.paused) {
         return 0;
     }
-    SDL_Texture *former_target = SDL_GetRenderTarget(data.renderer);
+    render_state state = save_render_state();
+    SDL_Texture *former_target = state.target;
     if (!former_target) {
         return 0;
     }
@@ -798,12 +973,14 @@ static int save_to_texture(int texture_id, int x, int y, int width, int height)
 
     SDL_Rect former_viewport;
     SDL_RenderGetViewport(data.renderer, &former_viewport);
-    SDL_Rect src_rect = { x + former_viewport.x, y + former_viewport.y, width, height };
+    float density = state.scale_x;
+    SDL_Rect src_rect = { (int)roundf((x + former_viewport.x) * density),
+        (int)roundf((y + former_viewport.y) * density), (int)roundf(width * density), (int)roundf(height * density) };
     SDL_Rect dst_rect = { 0, 0, width, height };
-    SDL_SetRenderTarget(data.renderer, texture);
+    set_render_target(texture);
+    reset_target_state();
     SDL_RenderCopy(data.renderer, former_target, &src_rect, &dst_rect);
-    SDL_SetRenderTarget(data.renderer, former_target);
-    SDL_RenderSetViewport(data.renderer, &former_viewport);
+    restore_render_state(&state);
 
     if (!texture_info) {
         texture_info = malloc(sizeof(buffer_texture));
@@ -860,13 +1037,10 @@ static void create_blend_texture(custom_image_type type)
     }
     const image *img = image_get(image_group(GROUP_TERRAIN_FLAT_TILE));
     SDL_Texture *flat_tile = get_texture(img->atlas.id);
-    SDL_Texture *former_target = SDL_GetRenderTarget(data.renderer);
-    SDL_Rect former_viewport;
-    SDL_Rect former_clip;
-    SDL_RenderGetViewport(data.renderer, &former_viewport);
-    SDL_RenderGetClipRect(data.renderer, &former_clip);
+    render_state state = save_render_state();
 
-    SDL_SetRenderTarget(data.renderer, texture);
+    set_render_target(texture);
+    reset_target_state();
     SDL_Rect rect = { 0, 0, 58, 30 };
     SDL_RenderSetClipRect(data.renderer, &rect);
     SDL_RenderSetViewport(data.renderer, &rect);
@@ -883,9 +1057,7 @@ static void create_blend_texture(custom_image_type type)
     SDL_Rect src_coords = { img->atlas.x_offset, img->atlas.y_offset, img->width, img->height };
     SDL_RenderCopy(data.renderer, flat_tile, &src_coords, 0);
 
-    SDL_SetRenderTarget(data.renderer, former_target);
-    SDL_RenderSetViewport(data.renderer, &former_viewport);
-    SDL_RenderSetClipRect(data.renderer, &former_clip);
+    restore_render_state(&state);
 
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_MOD);
 
@@ -917,15 +1089,12 @@ static SDL_Texture *get_silhouette_texture(const image *img)
     }
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
     SDL_Texture *original_texture = get_texture(img->atlas.id);
-    SDL_Texture *former_target = SDL_GetRenderTarget(data.renderer);
-    SDL_Rect former_viewport;
-    SDL_Rect former_clip;
+    render_state state = save_render_state();
     SDL_BlendMode former_blend_mode;
-    SDL_RenderGetViewport(data.renderer, &former_viewport);
-    SDL_RenderGetClipRect(data.renderer, &former_clip);
     SDL_GetRenderDrawBlendMode(data.renderer, &former_blend_mode);
 
-    SDL_SetRenderTarget(data.renderer, texture);
+    set_render_target(texture);
+    reset_target_state();
     SDL_Rect rect = { 0, 0, img->width, img->height };
     SDL_RenderSetClipRect(data.renderer, &rect);
     SDL_RenderSetViewport(data.renderer, &rect);
@@ -954,14 +1123,14 @@ static SDL_Texture *get_silhouette_texture(const image *img)
     SDL_Surface *surface = SDL_CreateRGBSurface(0, img->width, img->height, 32,
         0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
     if (!surface) {
+        restore_render_state(&state);
+        SDL_SetRenderDrawBlendMode(data.renderer, former_blend_mode);
         SDL_DestroyTexture(texture);
         return 0;
     }
     SDL_RenderReadPixels(data.renderer, 0, 0, surface->pixels, surface->pitch);
 
-    SDL_SetRenderTarget(data.renderer, former_target);
-    SDL_RenderSetViewport(data.renderer, &former_viewport);
-    SDL_RenderSetClipRect(data.renderer, &former_clip);
+    restore_render_state(&state);
     SDL_SetRenderDrawBlendMode(data.renderer, former_blend_mode);
 
     SDL_Texture *final_texture = SDL_CreateTextureFromSurface(data.renderer, surface);
@@ -1184,6 +1353,11 @@ static void create_renderer_interface(void)
     data.renderer_interface.free_unpacked_image = free_unpacked_image;
     data.renderer_interface.should_pack_image = should_pack_image;
     data.renderer_interface.update_scale = update_scale;
+    data.renderer_interface.begin_city_layer = begin_city_layer;
+    data.renderer_interface.end_city_layer = end_city_layer;
+    data.renderer_interface.begin_panel_layer = begin_panel_layer;
+    data.renderer_interface.end_panel_layer = end_panel_layer;
+    data.renderer_interface.begin_border_layer = begin_border_layer;
 
     graphics_renderer_set_interface(&data.renderer_interface);
 }
@@ -1253,6 +1427,10 @@ int platform_renderer_init(void *window)
 
 static void destroy_render_texture(void)
 {
+    data.drawing_city_layer = 0;
+    SDL_DestroyTexture(data.city_texture); data.city_texture = NULL;
+    SDL_DestroyTexture(data.city_sharp_texture); data.city_sharp_texture = NULL;
+    if (data.sharp_texture) { SDL_DestroyTexture(data.sharp_texture); data.sharp_texture = 0; }
     if (data.render_texture) {
         SDL_DestroyTexture(data.render_texture);
         data.render_texture = 0;
@@ -1277,7 +1455,7 @@ int platform_renderer_create_render_texture(int width, int height)
 #ifndef __APPLE__
         // Scale using nearest neighbour when we scale a multiple of 100%: makes it look sharper.
         // But not on MacOS: users are used to the linear interpolation since that's what Apple also does.
-        if (platform_screen_get_scale() % 100 == 0) {
+        if (data.sharp_texture || platform_screen_get_scale() % 100 == 0) {
             scale_quality = "nearest";
         }
 #endif
@@ -1286,20 +1464,54 @@ int platform_renderer_create_render_texture(int width, int height)
     }
 #endif
 
-    SDL_SetRenderTarget(data.renderer, NULL);
+    set_render_target(NULL);
     SDL_RenderSetLogicalSize(data.renderer, width, height);
 
-    data.render_texture = SDL_CreateTexture(data.renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET, width, height);
+    data.output_scale = 1.0f;
+    int physical_w = width, physical_h = height;
+    int ow = 0, oh = 0; SDL_GetRendererOutputSize(data.renderer, &ow, &oh);
+    float factor = fminf((float)ow / width, (float)oh / height);
+    if (encoding_get() == ENCODING_KOREAN && factor > 1.001f && factor <= 4.0f &&
+        (long long)ow * oh <= 16 * 1024 * 1024) {
+        physical_w = (int)roundf(width * factor); physical_h = (int)roundf(height * factor);
+        data.output_scale = factor;
+    }
+    if (data.output_scale > 1) {
+        data.city_texture = SDL_CreateTexture(data.renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET, width, height);
+        if (!data.city_texture) {
+            data.output_scale = 1; physical_w = width; physical_h = height;
+        } else {
+            SDL_SetTextureBlendMode(data.city_texture, SDL_BLENDMODE_NONE);
+#ifdef USE_TEXTURE_SCALE_MODE
+            if (HAS_TEXTURE_SCALE_MODE) {
+                data.city_sharp_texture = sharp_scale_create(data.renderer, width, height);
+                SDL_SetTextureScaleMode(data.city_texture, data.city_sharp_texture || fabsf(factor - roundf(factor)) < 0.001f ?
+                    SDL_ScaleModeNearest : SDL_ScaleModeLinear);
+            }
+#endif
+        }
+    }
+    data.render_texture = SDL_CreateTexture(data.renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET, physical_w, physical_h);
+    if (!data.render_texture && data.output_scale > 1) {
+        SDL_DestroyTexture(data.city_texture); data.city_texture = NULL;
+        SDL_DestroyTexture(data.city_sharp_texture); data.city_sharp_texture = NULL;
+        data.output_scale = 1;
+        data.render_texture = SDL_CreateTexture(data.renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET, width, height);
+    }
     if (data.render_texture) {
+#ifdef USE_TEXTURE_SCALE_MODE
+        if (HAS_TEXTURE_SCALE_MODE && data.output_scale <= 1) data.sharp_texture = sharp_scale_create(data.renderer, width, height);
+#endif
         SDL_Log("Render texture created (%d x %d)", width, height);
-        SDL_SetRenderTarget(data.renderer, data.render_texture);
+        set_render_target(data.render_texture);
+        SDL_RenderSetLogicalSize(data.renderer, width, height);
         SDL_SetRenderDrawBlendMode(data.renderer, SDL_BLENDMODE_BLEND);
 
 #ifdef USE_TEXTURE_SCALE_MODE
         if (HAS_TEXTURE_SCALE_MODE) {
             SDL_ScaleMode scale_quality = SDL_ScaleModeLinear;
 #ifndef __APPLE__
-            if (platform_screen_get_scale() % 100 == 0) {
+            if (data.sharp_texture || platform_screen_get_scale() % 100 == 0) {
                 scale_quality = SDL_ScaleModeNearest;
             }
 #endif
@@ -1358,8 +1570,8 @@ static void draw_tooltip(void)
     SDL_Rect src;
     src.x = 0;
     src.y = 0;
-    src.w = data.tooltip.width;
-    src.h = data.tooltip.height;
+    src.w = (int)ceilf(data.tooltip.width * data.output_scale);
+    src.h = (int)ceilf(data.tooltip.height * data.output_scale);
     SDL_Rect dst;
     dst.x = data.tooltip.x;
     dst.y = data.tooltip.y;
@@ -1394,15 +1606,17 @@ void platform_renderer_render(void)
     if (data.paused) {
         return;
     }
-    SDL_SetRenderTarget(data.renderer, NULL);
-    SDL_RenderCopy(data.renderer, data.render_texture, NULL, NULL);
+    set_render_target(NULL);
+    if (!sharp_scale_copy(data.renderer, data.render_texture, data.sharp_texture)) {
+        SDL_RenderCopy(data.renderer, data.render_texture, NULL, NULL);
+    }
     draw_tooltip();
     if ((platform_cursor_is_forced_software_cursor() || !platform_cursor_has_hardware_cursor()) &&
         !platform_cursor_is_disabled()) {
         draw_software_mouse_cursor();
     }
     SDL_RenderPresent(data.renderer);
-    SDL_SetRenderTarget(data.renderer, data.render_texture);
+    set_render_target(data.render_texture);
 }
 
 void platform_renderer_generate_mouse_cursor_texture(int cursor_id, int size, const color_t *pixels,
@@ -1430,7 +1644,7 @@ void platform_renderer_generate_mouse_cursor_texture(int cursor_id, int size, co
 
 void platform_renderer_pause(void)
 {
-    SDL_SetRenderTarget(data.renderer, NULL);
+    set_render_target(NULL);
     data.paused = 1;
 }
 
@@ -1438,7 +1652,7 @@ void platform_renderer_resume(void)
 {
     data.paused = 0;
     platform_renderer_create_render_texture(screen_width(), screen_height());
-    SDL_SetRenderTarget(data.renderer, data.render_texture);
+    set_render_target(data.render_texture);
 }
 
 void platform_renderer_destroy(void)
@@ -1449,3 +1663,4 @@ void platform_renderer_destroy(void)
         data.renderer = 0;
     }
 }
+

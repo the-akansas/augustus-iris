@@ -1,0 +1,3304 @@
+{
+ "briefing": "목표: 모든 도시가 인구 25,000명과 번영 100을 달성하고, 전체 인구가 150,000명 이상이면 함께 승리합니다.\n\n모든 도시는 가장 큰 지도(160x160)를 씁니다. 포럼, 광장, 맹수 우리는 지을 수 없습니다. 가장 높은 주택은 비너스 대성전을 활용해야 닿을 수 있습니다.\n\n브리타니아\n- 린둠: 포도와 올리브를 기를 수 없습니다. 호수 도시라 무역선이 들어오지 못합니다(어업은 가능). 공물: 도기\n- 론디니움: 포도는 기르지만 올리브는 기를 수 없습니다. 어장이 없습니다. 공물: 가구\n두 도시 모두 대리석을 캘 수 없습니다. 대리석은 루그드눔이나 남쪽 플레이어에게서 얻습니다.\n\n서지중해\n- 카르타고: 목재와 가축을 얻을 수 없습니다. 공물: 기름\n- 타라코: 점토, 목재, 가축을 얻을 수 없습니다. 유일하게 금광을 지을 수 있습니다. 공물: 포도주\n\n갈리아·이탈리아\n- 루테티아: 올리브, 대리석, 철을 얻을 수 없습니다. 내륙 도시라 배가 다니지 않고 어장도 없습니다. 공물: 포도주\n- 메디올라눔: 점토와 가축을 얻을 수 없습니다. 어장이 없습니다. 대리석을 캘 수 있습니다. 공물: 무기\n\n중립 도시와의 거래량은 한정되어 있습니다. 플레이어끼리 거래하지 않으면 도시를 끝까지 키울 수 없습니다. 플레이어 간 거래는 육로로 오갑니다.\n\n통치자는 총독으로 시작하고, 황제의 지지도는 원작처럼 오르내립니다.\n5년마다 야만인이 쳐들어옵니다(멀티플레이에서는 더 강합니다). 탑, 성문, 성벽을 지을 수 있습니다.\n4년마다 황제가 공물을 요청합니다.",
+ "empire": {
+  "cities": [
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": true,
+    "name_id": 25,
+    "role": "player",
+    "sea": 0,
+    "sells": {},
+    "x": 283,
+    "y": 31
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": true,
+    "name_id": 36,
+    "role": "player",
+    "sea": 0,
+    "sells": {},
+    "x": 332,
+    "y": 89
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": true,
+    "name_id": 6,
+    "role": "player",
+    "sea": 0,
+    "sells": {},
+    "x": 672,
+    "y": 751
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": true,
+    "name_id": 7,
+    "role": "player",
+    "sea": 0,
+    "sells": {},
+    "x": 398,
+    "y": 510
+   },
+   {
+    "buys": {
+     "15": 25
+    },
+    "cost": 400,
+    "enabled": false,
+    "name_id": 1,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "16": 15,
+     "18": 15
+    },
+    "x": 921,
+    "y": 574
+   },
+   {
+    "buys": {
+     "1": 25,
+     "15": 15,
+     "19": 15
+    },
+    "cost": 400,
+    "enabled": false,
+    "name_id": 2,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "10": 25,
+     "14": 25
+    },
+    "x": 818,
+    "y": 533
+   },
+   {
+    "buys": {
+     "11": 25
+    },
+    "cost": 600,
+    "enabled": false,
+    "name_id": 3,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "18": 25,
+     "7": 25,
+     "9": 25
+    },
+    "x": 961,
+    "y": 559
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": true,
+    "name_id": 4,
+    "role": "player",
+    "sea": 0,
+    "sells": {},
+    "x": 630,
+    "y": 326
+   },
+   {
+    "buys": {
+     "15": 25,
+     "2": 25
+    },
+    "cost": 1000,
+    "enabled": false,
+    "name_id": 5,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "17": 15,
+     "18": 15,
+     "19": 15
+    },
+    "x": 241,
+    "y": 744
+   },
+   {
+    "buys": {
+     "17": 15,
+     "5": 15
+    },
+    "cost": 600,
+    "enabled": false,
+    "name_id": 8,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "1": 25,
+     "11": 15,
+     "14": 25,
+     "18": 15
+    },
+    "x": 1188,
+    "y": 675
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": false,
+    "name_id": 9,
+    "role": "npc",
+    "sea": 0,
+    "sells": {},
+    "x": 1382,
+    "y": 629
+   },
+   {
+    "buys": {
+     "16": 15,
+     "17": 25,
+     "8": 15
+    },
+    "cost": 600,
+    "enabled": false,
+    "name_id": 10,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "11": 15,
+     "14": 25,
+     "4": 15
+    },
+    "x": 851,
+    "y": 749
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": false,
+    "name_id": 11,
+    "role": "npc",
+    "sea": 0,
+    "sells": {},
+    "x": 130,
+    "y": 619
+   },
+   {
+    "buys": {
+     "17": 25,
+     "18": 15
+    },
+    "cost": 500,
+    "enabled": false,
+    "name_id": 12,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "13": 25,
+     "15": 25,
+     "6": 25
+    },
+    "x": 1673,
+    "y": 749
+   },
+   {
+    "buys": {
+     "17": 15,
+     "18": 25,
+     "19": 25
+    },
+    "cost": 600,
+    "enabled": false,
+    "name_id": 13,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "1": 25
+    },
+    "x": 851,
+    "y": 910
+   },
+   {
+    "buys": {
+     "18": 25
+    },
+    "cost": 600,
+    "enabled": false,
+    "name_id": 14,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "11": 15,
+     "14": 25
+    },
+    "x": 131,
+    "y": 810
+   },
+   {
+    "buys": {
+     "19": 15
+    },
+    "cost": 600,
+    "enabled": false,
+    "name_id": 15,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "13": 25,
+     "15": 15,
+     "6": 15
+    },
+    "x": 1147,
+    "y": 698
+   },
+   {
+    "buys": {
+     "19": 25,
+     "21": 40
+    },
+    "cost": 500,
+    "enabled": true,
+    "name_id": 16,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "16": 25,
+     "18": 25,
+     "3": 40,
+     "6": 40,
+     "7": 40
+    },
+    "trade_players": [
+     "player3",
+     "player4"
+    ],
+    "x": 293,
+    "y": 633
+   },
+   {
+    "buys": {
+     "1": 25,
+     "15": 40,
+     "19": 15
+    },
+    "cost": 1300,
+    "enabled": false,
+    "name_id": 17,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "11": 15,
+     "14": 25,
+     "7": 25,
+     "9": 25
+    },
+    "x": 1353,
+    "y": 694
+   },
+   {
+    "buys": {
+     "11": 25,
+     "5": 15
+    },
+    "cost": 500,
+    "enabled": false,
+    "name_id": 18,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "1": 25,
+     "13": 25,
+     "6": 15
+    },
+    "x": 1369,
+    "y": 728
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": false,
+    "name_id": 19,
+    "role": "npc",
+    "sea": 0,
+    "sells": {},
+    "x": 1641,
+    "y": 507
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": false,
+    "name_id": 20,
+    "role": "npc",
+    "sea": 0,
+    "sells": {},
+    "x": 1144,
+    "y": 899
+   },
+   {
+    "buys": {
+     "15": 15,
+     "19": 25,
+     "4": 25
+    },
+    "cost": 400,
+    "enabled": false,
+    "name_id": 21,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "1": 25,
+     "8": 25
+    },
+    "x": 1734,
+    "y": 771
+   },
+   {
+    "buys": {
+     "15": 15,
+     "19": 15,
+     "3": 25
+    },
+    "cost": 300,
+    "enabled": false,
+    "name_id": 22,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "1": 25,
+     "4": 25
+    },
+    "x": 1755,
+    "y": 801
+   },
+   {
+    "buys": {
+     "11": 25
+    },
+    "cost": 400,
+    "enabled": false,
+    "name_id": 23,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "1": 25
+    },
+    "x": 1758,
+    "y": 831
+   },
+   {
+    "buys": {
+     "16": 25,
+     "19": 15
+    },
+    "cost": 400,
+    "enabled": false,
+    "name_id": 24,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "15": 25,
+     "8": 40
+    },
+    "x": 1714,
+    "y": 891
+   },
+   {
+    "buys": {
+     "19": 40
+    },
+    "cost": 500,
+    "enabled": true,
+    "name_id": 26,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "11": 25,
+     "14": 25
+    },
+    "trade_players": [
+     "player1",
+     "player2"
+    ],
+    "x": 226,
+    "y": 93
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": true,
+    "name_id": 27,
+    "role": "player",
+    "sea": 0,
+    "sells": {},
+    "x": 386,
+    "y": 216
+   },
+   {
+    "buys": {
+     "11": 25,
+     "19": 40
+    },
+    "cost": 600,
+    "enabled": true,
+    "name_id": 28,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "15": 25,
+     "16": 25,
+     "2": 40,
+     "6": 40,
+     "7": 40
+    },
+    "trade_players": [
+     "player3",
+     "player4",
+     "player6"
+    ],
+    "x": 498,
+    "y": 418
+   },
+   {
+    "buys": {
+     "19": 15,
+     "2": 15
+    },
+    "cost": 500,
+    "enabled": true,
+    "name_id": 29,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "13": 25,
+     "6": 15,
+     "9": 25
+    },
+    "trade_players": [
+     "player5",
+     "player6"
+    ],
+    "x": 412,
+    "y": 446
+   },
+   {
+    "buys": {
+     "15": 40,
+     "21": 40
+    },
+    "cost": 500,
+    "enabled": true,
+    "name_id": 30,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "11": 25,
+     "18": 25,
+     "2": 25,
+     "8": 25
+    },
+    "trade_players": [
+     "player1",
+     "player2",
+     "player5",
+     "player6"
+    ],
+    "x": 490,
+    "y": 300
+   },
+   {
+    "buys": {
+     "10": 40,
+     "16": 25,
+     "18": 40,
+     "19": 25
+    },
+    "cost": 600,
+    "enabled": true,
+    "name_id": 31,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "1": 40,
+     "15": 40,
+     "6": 40
+    },
+    "trade_players": [
+     "player3",
+     "player4"
+    ],
+    "x": 398,
+    "y": 771
+   },
+   {
+    "buys": {
+     "19": 25
+    },
+    "cost": 500,
+    "enabled": false,
+    "name_id": 32,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "16": 15,
+     "18": 40
+    },
+    "x": 1524,
+    "y": 945
+   },
+   {
+    "buys": {
+     "2": 25
+    },
+    "cost": 650,
+    "enabled": true,
+    "name_id": 33,
+    "role": "npc",
+    "sea": 1,
+    "sells": {
+     "18": 15,
+     "4": 15
+    },
+    "trade_players": [
+     "player2"
+    ],
+    "x": 522,
+    "y": 141
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": false,
+    "name_id": 34,
+    "role": "npc",
+    "sea": 0,
+    "sells": {},
+    "x": 568,
+    "y": 173
+   },
+   {
+    "buys": {
+     "19": 25
+    },
+    "cost": 500,
+    "enabled": false,
+    "name_id": 35,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "15": 40,
+     "16": 15,
+     "18": 15
+    },
+    "x": 77,
+    "y": 919
+   },
+   {
+    "buys": {
+     "17": 15,
+     "18": 15,
+     "8": 25
+    },
+    "cost": 300,
+    "enabled": false,
+    "name_id": 37,
+    "role": "npc",
+    "sea": 0,
+    "sells": {
+     "13": 25,
+     "15": 15,
+     "6": 15,
+     "7": 15
+    },
+    "x": 595,
+    "y": 873
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": false,
+    "name_id": 38,
+    "role": "npc",
+    "sea": 0,
+    "sells": {},
+    "x": 1057,
+    "y": 323
+   },
+   {
+    "buys": {},
+    "cost": 0,
+    "enabled": false,
+    "name_id": 39,
+    "role": "npc",
+    "sea": 0,
+    "sells": {},
+    "x": 1396,
+    "y": 537
+   }
+  ],
+  "template": 25
+ },
+ "id": "scenario-9f3a45993a205ffca9a96323aee36dbc",
+ "revision": 1,
+ "rules": {
+  "mode": "cooperative",
+  "objectives": {
+   "celebration": "video",
+   "deliveries": [],
+   "per_city": {
+    "player1": {
+     "culture": 0,
+     "favor": 0,
+     "peace": 0,
+     "population": 25000,
+     "prosperity": 100,
+     "treasury": 0
+    },
+    "player2": {
+     "culture": 0,
+     "favor": 0,
+     "peace": 0,
+     "population": 25000,
+     "prosperity": 100,
+     "treasury": 0
+    },
+    "player3": {
+     "culture": 0,
+     "favor": 0,
+     "peace": 0,
+     "population": 25000,
+     "prosperity": 100,
+     "treasury": 0
+    },
+    "player4": {
+     "culture": 0,
+     "favor": 0,
+     "peace": 0,
+     "population": 25000,
+     "prosperity": 100,
+     "treasury": 0
+    },
+    "player5": {
+     "culture": 0,
+     "favor": 0,
+     "peace": 0,
+     "population": 25000,
+     "prosperity": 100,
+     "treasury": 0
+    },
+    "player6": {
+     "culture": 0,
+     "favor": 0,
+     "peace": 0,
+     "population": 25000,
+     "prosperity": 100,
+     "treasury": 0
+    }
+   },
+   "population_total": 150000,
+   "treasury_total": 0
+  },
+  "player_transport": "land",
+  "starting_funds": 15000
+ },
+ "schema": 4,
+ "slots": [
+  {
+   "allowed_buildings": [
+    5,
+    6,
+    7,
+    8,
+    10,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    51,
+    52,
+    53,
+    55,
+    56,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    74,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    85,
+    91,
+    92,
+    94,
+    95,
+    98,
+    100,
+    101,
+    102,
+    105,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    158,
+    160,
+    161,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    182,
+    183,
+    185,
+    186,
+    187,
+    188,
+    189,
+    190,
+    191,
+    194,
+    195,
+    196,
+    197,
+    198,
+    201,
+    202,
+    203,
+    204,
+    205,
+    211,
+    212
+   ],
+   "campaign_scenario": 105,
+   "events": [
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 48,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 96,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 144,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 192,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 240,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 288,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 336,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 384,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 432,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 480,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 528,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 576,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 624,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 672,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 720,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 768,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 816,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 864,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 912,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 960,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1008,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1056,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1104,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1152,
+     "resource": 15
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1200,
+     "resource": 15
+    }
+   ],
+   "governance": {
+    "favor": 50,
+    "policy": "original",
+    "rank": 9,
+    "salary_rank": -1,
+    "savings": 0
+   },
+   "id": "player1",
+   "invasions": [
+    {
+     "amount": 40,
+     "month": 60,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 80,
+     "month": 120,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 120,
+     "month": 180,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 240,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 300,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 360,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 420,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 480,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 540,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 600,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 660,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 720,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 780,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 840,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 900,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 960,
+     "point": 0,
+     "target": 4
+    }
+   ],
+   "name_id": 25,
+   "terrain_edits": []
+  },
+  {
+   "allowed_buildings": [
+    5,
+    6,
+    7,
+    8,
+    10,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    51,
+    52,
+    53,
+    55,
+    56,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    75,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    85,
+    91,
+    92,
+    94,
+    95,
+    98,
+    100,
+    101,
+    102,
+    104,
+    105,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    158,
+    160,
+    161,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    182,
+    183,
+    185,
+    186,
+    187,
+    188,
+    189,
+    190,
+    191,
+    194,
+    195,
+    196,
+    197,
+    198,
+    201,
+    202,
+    203,
+    204,
+    205,
+    211,
+    212
+   ],
+   "campaign_scenario": 16,
+   "events": [
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 48,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 96,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 144,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 192,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 240,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 288,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 336,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 384,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 432,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 480,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 528,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 576,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 624,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 672,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 720,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 768,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 816,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 864,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 912,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 960,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1008,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1056,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1104,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1152,
+     "resource": 16
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1200,
+     "resource": 16
+    }
+   ],
+   "governance": {
+    "favor": 50,
+    "policy": "original",
+    "rank": 9,
+    "salary_rank": -1,
+    "savings": 0
+   },
+   "id": "player2",
+   "invasions": [
+    {
+     "amount": 40,
+     "month": 60,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 80,
+     "month": 120,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 120,
+     "month": 180,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 240,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 300,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 360,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 420,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 480,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 540,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 600,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 660,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 720,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 780,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 840,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 900,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 960,
+     "point": 0,
+     "target": 4
+    }
+   ],
+   "name_id": 36,
+   "terrain_edits": []
+  },
+  {
+   "allowed_buildings": [
+    5,
+    6,
+    7,
+    8,
+    10,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    51,
+    52,
+    53,
+    55,
+    56,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    85,
+    91,
+    92,
+    94,
+    95,
+    98,
+    100,
+    101,
+    102,
+    103,
+    104,
+    106,
+    107,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    158,
+    160,
+    161,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    182,
+    183,
+    185,
+    186,
+    187,
+    188,
+    189,
+    190,
+    191,
+    194,
+    195,
+    196,
+    197,
+    198,
+    201,
+    202,
+    203,
+    204,
+    205,
+    211,
+    212
+   ],
+   "campaign_scenario": 101,
+   "events": [
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 48,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 96,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 144,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 192,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 240,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 288,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 336,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 384,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 432,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 480,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 528,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 576,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 624,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 672,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 720,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 768,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 816,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 864,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 912,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 960,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1008,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1056,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1104,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1152,
+     "resource": 17
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1200,
+     "resource": 17
+    }
+   ],
+   "governance": {
+    "favor": 50,
+    "policy": "original",
+    "rank": 9,
+    "salary_rank": -1,
+    "savings": 0
+   },
+   "id": "player3",
+   "invasions": [
+    {
+     "amount": 40,
+     "month": 60,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 80,
+     "month": 120,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 120,
+     "month": 180,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 240,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 300,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 360,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 420,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 480,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 540,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 600,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 660,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 720,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 780,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 840,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 900,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 960,
+     "point": 0,
+     "target": 4
+    }
+   ],
+   "name_id": 6,
+   "terrain_edits": []
+  },
+  {
+   "allowed_buildings": [
+    5,
+    6,
+    7,
+    8,
+    10,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    51,
+    52,
+    53,
+    55,
+    56,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    85,
+    91,
+    92,
+    94,
+    95,
+    98,
+    100,
+    101,
+    102,
+    103,
+    104,
+    106,
+    107,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    158,
+    160,
+    161,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    182,
+    183,
+    184,
+    185,
+    186,
+    187,
+    188,
+    189,
+    190,
+    191,
+    194,
+    195,
+    196,
+    197,
+    198,
+    201,
+    202,
+    203,
+    204,
+    205,
+    211,
+    212
+   ],
+   "campaign_scenario": 109,
+   "events": [
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 48,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 96,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 144,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 192,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 240,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 288,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 336,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 384,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 432,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 480,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 528,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 576,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 624,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 672,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 720,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 768,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 816,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 864,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 912,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 960,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1008,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1056,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1104,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1152,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1200,
+     "resource": 18
+    }
+   ],
+   "governance": {
+    "favor": 50,
+    "policy": "original",
+    "rank": 9,
+    "salary_rank": -1,
+    "savings": 0
+   },
+   "id": "player4",
+   "invasions": [
+    {
+     "amount": 40,
+     "month": 60,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 80,
+     "month": 120,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 120,
+     "month": 180,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 240,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 300,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 360,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 420,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 480,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 540,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 600,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 660,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 720,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 780,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 840,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 900,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 960,
+     "point": 0,
+     "target": 4
+    }
+   ],
+   "name_id": 7,
+   "terrain_edits": []
+  },
+  {
+   "allowed_buildings": [
+    5,
+    6,
+    7,
+    8,
+    10,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    51,
+    52,
+    53,
+    55,
+    56,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    85,
+    91,
+    92,
+    94,
+    95,
+    98,
+    100,
+    101,
+    102,
+    104,
+    105,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    158,
+    160,
+    161,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    182,
+    183,
+    185,
+    186,
+    187,
+    188,
+    189,
+    190,
+    191,
+    194,
+    195,
+    196,
+    197,
+    198,
+    201,
+    202,
+    203,
+    204,
+    205,
+    211,
+    212
+   ],
+   "campaign_scenario": 13,
+   "events": [
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 48,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 96,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 144,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 192,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 240,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 288,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 336,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 384,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 432,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 480,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 528,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 576,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 624,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 672,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 720,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 768,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 816,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 864,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 912,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 960,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1008,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1056,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1104,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1152,
+     "resource": 18
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1200,
+     "resource": 18
+    }
+   ],
+   "governance": {
+    "favor": 50,
+    "policy": "original",
+    "rank": 9,
+    "salary_rank": -1,
+    "savings": 0
+   },
+   "id": "player5",
+   "invasions": [
+    {
+     "amount": 40,
+     "month": 60,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 80,
+     "month": 120,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 120,
+     "month": 180,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 240,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 300,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 360,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 420,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 480,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 540,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 600,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 660,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 720,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 780,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 840,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 900,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 960,
+     "point": 0,
+     "target": 4
+    }
+   ],
+   "name_id": 27,
+   "terrain_edits": []
+  },
+  {
+   "allowed_buildings": [
+    5,
+    6,
+    7,
+    8,
+    10,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    51,
+    52,
+    53,
+    55,
+    56,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    75,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    85,
+    91,
+    92,
+    94,
+    95,
+    98,
+    100,
+    101,
+    102,
+    103,
+    104,
+    106,
+    107,
+    108,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    158,
+    160,
+    161,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    182,
+    183,
+    185,
+    186,
+    187,
+    188,
+    189,
+    190,
+    191,
+    194,
+    195,
+    196,
+    197,
+    198,
+    201,
+    202,
+    203,
+    204,
+    205,
+    211,
+    212
+   ],
+   "campaign_scenario": 7,
+   "events": [
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 48,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 96,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 144,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 192,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 240,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 288,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 336,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 384,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 432,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 480,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 528,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 576,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 624,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 672,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 720,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 768,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 816,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 864,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 912,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 960,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1008,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1056,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1104,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1152,
+     "resource": 19
+    },
+    {
+     "amount": 16,
+     "deadline": 2,
+     "kind": "request",
+     "month": 1200,
+     "resource": 19
+    }
+   ],
+   "governance": {
+    "favor": 50,
+    "policy": "original",
+    "rank": 9,
+    "salary_rank": -1,
+    "savings": 0
+   },
+   "id": "player6",
+   "invasions": [
+    {
+     "amount": 40,
+     "month": 60,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 80,
+     "month": 120,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 120,
+     "month": 180,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 240,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 300,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 360,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 420,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 480,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 540,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 600,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 660,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 720,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 780,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 840,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 900,
+     "point": 0,
+     "target": 4
+    },
+    {
+     "amount": 150,
+     "month": 960,
+     "point": 0,
+     "target": 4
+    }
+   ],
+   "name_id": 4,
+   "terrain_edits": []
+  }
+ ],
+ "title": "The Provincial Sextet"
+}

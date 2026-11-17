@@ -1,3 +1,5 @@
+#include "figure/formation.h"
+#include "multiplayer/transport.h"
 #include "figure/figure.h"
 
 #include "building/building.h"
@@ -21,7 +23,7 @@
 #define FIGURE_ARRAY_SIZE_STEP 1000
 
 #define FIGURE_ORIGINAL_BUFFER_SIZE 128
-#define FIGURE_CURRENT_BUFFER_SIZE 171
+#define FIGURE_CURRENT_BUFFER_SIZE 338
 
 static struct {
     int created_sequence;
@@ -78,6 +80,7 @@ figure *figure_create(figure_type type, int x, int y, direction_type dir)
 
 void figure_delete(figure *f)
 {
+    mp_transport_on_delete(f);
     building *b = building_get(f->building_id);
     switch (f->type) {
         case FIGURE_LABOR_SEEKER:
@@ -220,6 +223,7 @@ int figure_is_dead(const figure *f)
 
 int figure_is_enemy(const figure *f)
 {
+    if (formation_get(f->formation_id)->mp_expedition_role == 2) return 1;
     return (f->type >= FIGURE_ENEMY43_SPEAR && f->type <= FIGURE_ENEMY_CAESAR_LEGIONARY) || f->type == FIGURE_ENEMY_CATAPULT;
 }
 
@@ -290,6 +294,7 @@ int figure_enemy_class(const figure *f)
 
 int figure_is_legion(const figure *f)
 {
+    if (formation_get(f->formation_id)->mp_expedition_role == 2) return 0;
     return (f->type >= FIGURE_FORT_JAVELIN && f->type <= FIGURE_FORT_LEGIONARY) || f->type == FIGURE_FORT_INFANTRY || f->type == FIGURE_FORT_ARCHER;
 }
 
@@ -454,6 +459,11 @@ static void figure_save(buffer *buf, const figure *f)
     buffer_write_i32(buf, f->opponent_id);
     buffer_write_i16(buf, f->last_visited_index);
     buffer_write_i16(buf, f->last_destinatation_id);
+    buffer_write_u32(buf, f->mp_contract_id);
+    buffer_write_u8(buf, f->mp_stop_count);
+    buffer_write_u8(buf, f->mp_leg_quantity);
+    for(int i=0;i<32;i++){buffer_write_u32(buf,f->mp_stops[i].building_id);buffer_write_u8(buf,f->mp_stops[i].quantity);}
+    buffer_write_u8(buf,f->mp_source);
 }
 
 static int get_resource_id(figure_type type, int resource)
@@ -609,9 +619,20 @@ static void figure_load(buffer *buf, figure *f, int figure_buf_size, int version
     if (version > SAVE_GAME_LAST_GRANARY_WAREHOUSE_NON_ROADBLOCKS) {
         f->last_destinatation_id = buffer_read_i16(buf);
     }
+    f->mp_contract_id = figure_buf_size >= 175 ? buffer_read_u32(buf) : 0;
+    if(figure_buf_size>=337){
+        f->mp_stop_count=buffer_read_u8(buf);f->mp_leg_quantity=buffer_read_u8(buf);
+        for(int i=0;i<32;i++){f->mp_stops[i].building_id=buffer_read_u32(buf);f->mp_stops[i].quantity=buffer_read_u8(buf);}
+        if(f->mp_stop_count>32)f->mp_stop_count=32;
+    }else if(f->mp_contract_id){
+        /* Earlier single-stop caravans preserve current progress and ready state. */
+        f->mp_leg_quantity=f->loads_sold_or_carrying;
+        if(f->action_state==242){f->mp_stop_count=1;f->mp_stops[0].building_id=f->destination_building_id;f->mp_stops[0].quantity=f->loads_sold_or_carrying;}
+    }
     // The following code should only be executed if the savegame includes figure information that is not 
     // supported on this specific version of Augustus. The extra bytes in the buffer must be skipped in order
     // to prevent reading bogus data for the next figure
+    f->mp_source=figure_buf_size >= 338 ? buffer_read_u8(buf) : 0;
     if (figure_buf_size > FIGURE_CURRENT_BUFFER_SIZE) {
         buffer_skip(buf, figure_buf_size - FIGURE_CURRENT_BUFFER_SIZE);
     }
@@ -622,7 +643,7 @@ void figure_save_state(buffer *list, buffer *seq)
     buffer_write_i32(seq, data.created_sequence);
 
     int buf_size = 4 + data.figures.size * FIGURE_CURRENT_BUFFER_SIZE;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(1, buf_size);
     buffer_init(list, buf_data, buf_size);
     buffer_write_i32(list, FIGURE_CURRENT_BUFFER_SIZE);
 

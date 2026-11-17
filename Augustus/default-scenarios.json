@@ -1,0 +1,9 @@
+{
+ "schema": 1,
+ "scenarios": [
+  "freebuild-6p",
+  "coop-6p",
+  "throne-6p",
+  "progress-6p"
+ ]
+}

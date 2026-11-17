@@ -42,6 +42,9 @@ language_type locale_determine_language(void);
  */
 language_type locale_last_determined_language(void);
 
+/* The language of converted own texts, which the "New game" check cannot recognise (multilingual, wip-25). */
+void locale_set_language(language_type language);
+
 /**
  * Check whether to write the year before the 'AD' part or the other way around
  * @return Boolean true if years should be written as "200 AD", false for "AD 200"

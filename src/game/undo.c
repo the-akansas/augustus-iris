@@ -62,6 +62,18 @@ void game_undo_disable(void)
     data.available = 0;
 }
 
+void game_undo_prepare_world_change(void)
+{
+    if (building_construction_in_progress()) {
+        /* Roll preview changes back while its snapshot is still current, then
+         * prevent the later mouse release/cancel from replaying that snapshot.
+         * Do not pause the multiplayer clock. */
+        building_construction_cancel();
+        building_construction_clear_type();
+    }
+    game_undo_disable();
+}
+
 void game_undo_add_building(building *b)
 {
     if (b->id <= 0) {

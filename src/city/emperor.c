@@ -103,8 +103,30 @@ static void update_debt_state(void)
     }
 }
 
+/* Multiplayer, Race for the Throne: the room's punitive expedition (multiplayer/emperor_raid.inc) brings the same
+ * legions. While one is in the city the favour logic below must not pause, recall or reward it; the room decides
+ * how it ends. Its size and losses use the same two counters and are cleared when it is over. (2026-11-14) */
+int mp_emperor_raid_active(void);
+void city_emperor_mp_raid_begin(int size)
+{
+    city_data.emperor.invasion.size = size;
+    city_data.emperor.invasion.soldiers_killed = 0;
+}
+void city_emperor_mp_raid_end(void)
+{
+    city_data.emperor.invasion.size = 0;
+    city_data.emperor.invasion.soldiers_killed = 0;
+}
+int city_emperor_mp_raid_killed(void)
+{
+    return city_data.emperor.invasion.soldiers_killed;
+}
+
 static void process_caesar_invasion(void)
 {
+    if (mp_emperor_raid_active()) {
+        return;
+    }
     if (city_data.figure.imperial_soldiers && !cheated_invasion) {
         // caesar invasion in progress
         city_data.emperor.invasion.duration_day_countdown--;

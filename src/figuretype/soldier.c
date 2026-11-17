@@ -1,4 +1,5 @@
 #include "soldier.h"
+#include "enemy.h"
 
 #include "assets/assets.h"
 #include "city/figures.h"
@@ -7,6 +8,7 @@
 #include "core/calc.h"
 #include "core/image.h"
 #include "figure/combat.h"
+#include "figure/enemy_army.h"
 #include "figure/formation.h"
 #include "figure/formation_layout.h"
 #include "figure/image.h"
@@ -178,7 +180,7 @@ static int find_mop_up_target(figure *f)
         target_id = 0;
     }
     if (target_id <= 0) {
-        target_id = figure_combat_get_target_for_soldier(f->x, f->y, 20);
+        target_id = figure_combat_get_target_for_soldier(f->x, f->y, formation_get(f->formation_id)->mp_expedition_role == 1 ? 400 : 20);
         if (target_id) {
             figure *target = figure_get(target_id);
             f->destination_x = target->x;
@@ -358,6 +360,28 @@ static int soldier_percentage_speed(figure_type type)
 void figure_soldier_action(figure *f)
 {
     formation *m = formation_get(f->formation_id);
+    if (m->mp_expedition_role == 2) {
+        figure_image_increase_offset(f, 12);
+        f->cart_image_id = 0;
+        figure_enemy_remote_action(f);
+        update_image(f, m);
+        return;
+    }
+    /* Visiting support has no fort. In the mop-up layout (how it arrives: automatic defence) it charges
+     * whenever the city is under attack, wherever that is, and otherwise waits at its standard. The host
+     * player may pick another layout in the legion panel: then it holds its place like an own legion
+     * (fights what comes next to it) and goes where the host sends it. */
+    if (m->mp_expedition_role == 1) {
+        int enemies = enemy_army_total_enemy_formations() + city_figures_rioters() + city_figures_attacking_natives();
+        if (f->action_state == FIGURE_ACTION_84_SOLDIER_AT_STANDARD && enemies > 0 && m->layout == FORMATION_MOP_UP) {
+            f->action_state = FIGURE_ACTION_86_SOLDIER_MOPPING_UP;
+        } else if (enemies <= 0) {
+            /* No fort routine counts these down for a visitor: without this it never walks back. */
+            m->recent_fight = 0;
+            m->missile_fired = 0;
+            m->missile_attack_timeout = 0;
+        }
+    }
     city_figures_add_soldier();
     f->terrain_usage = TERRAIN_USAGE_ANY;
     figure_image_increase_offset(f, 12);
@@ -444,7 +468,14 @@ void figure_soldier_action(figure *f)
             } else if (f->direction == DIR_FIGURE_LOST) {
                 f->alternative_location_index++;
                 if (f->alternative_location_index > 168) {
-                    f->state = FIGURE_STATE_DEAD;
+                    if (m->mp_expedition_role == 1) {
+                        /* A visiting soldier that finds no way to its place stays where it stands and keeps
+                         * trying: it belongs to another player and must not vanish over a blocked tile. */
+                        f->alternative_location_index = 0;
+                        f->action_state = FIGURE_ACTION_84_SOLDIER_AT_STANDARD;
+                    } else {
+                        f->state = FIGURE_STATE_DEAD;
+                    }
                 }
                 f->image_offset = 0;
             }
@@ -495,6 +526,17 @@ void figure_soldier_action(figure *f)
         case FIGURE_ACTION_86_SOLDIER_MOPPING_UP:
             f->formation_at_rest = 0;
             if (find_mop_up_target(f)) {
+                if (m->mp_expedition_role == 1) {
+                    /* Visiting support hunts across the whole city: keep heading for where the target is now,
+                     * not where it stood when it was picked (it used to march to the invaders' landing place
+                     * while they walked past it into the town). */
+                    const figure *target = figure_get(f->target_figure_id);
+                    if (calc_maximum_distance(f->destination_x, f->destination_y, target->x, target->y) > 6) {
+                        f->destination_x = target->x;
+                        f->destination_y = target->y;
+                        figure_route_remove(f);
+                    }
+                }
                 figure_movement_move_ticks_with_percentage(f, speed_factor, speed_factor_percentage);
                 if (f->direction == DIR_FIGURE_AT_DESTINATION) {
                     figure *target = figure_get(f->target_figure_id);

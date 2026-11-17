@@ -10,6 +10,7 @@
 #include "core/calc.h"
 #include "core/random.h"
 #include "figure/enemy_army.h"
+#include "figure/combat.h"
 #include "figure/figure.h"
 #include "figure/formation.h"
 #include "figure/formation_layout.h"
@@ -20,6 +21,7 @@
 #include "map/routing_path.h"
 #include "map/soldier_strength.h"
 #include "map/terrain.h"
+#include "multiplayer/clock.h"
 
 #define INFINITE 10000
 
@@ -256,6 +258,13 @@ static int set_enemy_target_building(formation *m)
     }
     building *best_building = get_best_and_closest_building(m->x_home, m->y_home, ENEMY_ATTACK_PRIORITY[attack], 100);
 
+    /* Original Caesar III targeting for barbarians and Caesar's legions, in multiplayer too (user 2026-11-14): one
+     * target of the invasion's attack type, else the rioter targets close by, else they leave. Only a visiting
+     * attack force of another player (sealed for now, multiplayer/army_seal.h) keeps looking for any target. */
+    if (!best_building && m->mp_expedition_role==2) {
+        for(int priority=0;priority<4 && !best_building;priority++)
+            best_building=get_best_and_closest_building(m->x_home,m->y_home,ENEMY_ATTACK_PRIORITY[priority],100);
+    }
     if (!best_building) {
         // no target buildings left: take rioter attack priority
         best_building = get_best_and_closest_building(m->x_home, m->y_home, RIOTER_ATTACK_PRIORITY, 29);
@@ -489,7 +498,9 @@ static void update_enemy_movement(formation *m, int roman_distance)
     int pursue_target = 0;
     int advance = 0;
     int target_formation_id = 0;
-    if (m->missile_fired) {
+    if (m->missile_fired && m->mp_expedition_role != 2) {
+        /* A visiting attack force does not stop for its own volleys: halting after every throw left it
+         * standing a few tiles from the defenders (or from a street of citizens) and never closing in. */
         halt = 1;
     } else if (m->missile_attack_timeout) {
         pursue_target = 1;
@@ -674,6 +685,10 @@ static void update_enemy_formation(formation *m, int *roman_distance)
             *roman_distance = 1;
         } else if (map_soldier_strength_get_max(m->x_home, m->y_home, 32, &x_tile, &y_tile)) {
             *roman_distance = 2;
+        }
+        if(m->mp_expedition_role==2){
+            int target=figure_combat_get_target_for_enemy(m->x_home,m->y_home);
+            if(target){figure *soldier=figure_get(target);x_tile=soldier->x;y_tile=soldier->y;*roman_distance=1;army->ignore_roman_soldiers=0;}
         }
         if (army->ignore_roman_soldiers) {
             *roman_distance = 0;

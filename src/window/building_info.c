@@ -1,3 +1,4 @@
+#include "window/multiplayer_lobby.h"
 #include "building_info.h"
 
 #include "assets/assets.h"
@@ -1271,6 +1272,8 @@ static void button_monument_construction(const generic_button *button)
 
 void window_building_info_show(int grid_offset)
 {
+    building *player_post=building_get(map_building_at(grid_offset));
+    if(player_post->type==BUILDING_PLAYER_TRADE_POST){window_multiplayer_trade_show_for_post(player_post->id);return;}
     window_type window = {
         WINDOW_BUILDING_INFO,
         draw_background,

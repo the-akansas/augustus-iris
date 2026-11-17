@@ -108,13 +108,14 @@ int text_get_width(const uint8_t *str, font_t font)
     return width;
 }
 
+/* Legacy callers use '@' as a no-prefix sentinel. Never suppress literal text '@'. */
 int text_get_number_width(int value, char prefix, const char *postfix, font_t font)
 {
     const font_definition *def = font_definition_for(font);
 
     int width = 0;
 
-    if (prefix) {
+    if (prefix && prefix != '@') {
         uint8_t prefix_str[2] = { prefix, 0 };
         width += text_get_width(prefix_str, font);
     }
@@ -159,7 +160,7 @@ int text_get_number_float_width(float value, int decimal_places, char prefix, co
 
     int width = 0;
 
-    if (prefix) {
+    if (prefix && prefix != '@') {
         uint8_t prefix_str[2] = { prefix, 0 };
         width += text_get_width(prefix_str, font);
     }
@@ -382,7 +383,7 @@ int text_draw_scaled(const uint8_t *str, int x, int y, font_t font, color_t colo
                 width = def->space_width;
             } else {
                 const image *img = image_letter(letter_id);
-                int height = def->image_y_offset(*str, img->height + img->y_offset, def->line_height);
+                int height = font_letter_y_offset(def, *str, letter_id);
                 image_draw_letter(def->font, letter_id, current_x, y - height, color, scale);
                 width = def->letter_spacing + img->original.width;
             }
@@ -417,7 +418,7 @@ int text_draw(const uint8_t *str, int x, int y, font_t font, color_t color)
 static int number_to_string(uint8_t *str, int value, char prefix, const char *postfix)
 {
     int offset = 0;
-    if (prefix) {
+    if (prefix && prefix != '@') {
         str[offset++] = prefix;
     }
     offset += string_from_int(&str[offset], value, 0);
@@ -432,7 +433,7 @@ static int number_to_string(uint8_t *str, int value, char prefix, const char *po
 static int number_float_to_string(uint8_t *str, float value, int decimal_places, char prefix, const char *postfix)
 {
     int offset = 0;
-    if (prefix) {
+    if (prefix && prefix != '@') {
         str[offset++] = prefix;
     }
     offset += string_from_float(&str[offset], value, decimal_places, 0);
@@ -450,7 +451,7 @@ int text_draw_number_scaled(int value, char prefix, const uint8_t *postfix,
     const font_definition *def = font_definition_for(font);
     int current_x = x;
 
-    if (prefix) {
+    if (prefix && prefix != '@') {
         uint8_t prefix_str[2] = { prefix, 0 };
         current_x += text_draw_scaled(prefix_str, current_x, y, font, color, scale) - def->space_width;
     }
@@ -471,7 +472,7 @@ int text_draw_number_scaled(int value, char prefix, const uint8_t *postfix,
                 width = def->space_width;
             } else {
                 const image *img = image_letter(letter_id);
-                int height = def->image_y_offset(*str, img->height + img->y_offset, def->line_height);
+                int height = font_letter_y_offset(def, *str, letter_id);
                 image_draw_letter(def->font, letter_id, current_x, y - height, color, scale);
                 width = def->letter_spacing + img->original.width;
             }
@@ -568,8 +569,9 @@ void text_draw_number_finances(int value, int x, int y, font_t font, color_t col
                     current_x -= !(inverted_length % 3) ? separator_pixels : 0;
                 }
                 const image *img = image_letter(letter_id);
-                int height = def->image_y_offset(*str, img->height + img->y_offset, def->line_height);
-                image_draw_letter(def->font, letter_id, current_x + (number_width - img->width) / 2, y - height, color, SCALE_NONE);
+                int height = font_letter_y_offset(def, *str, letter_id);
+                image_draw_letter(def->font, letter_id, current_x + (number_width - (letter_id >= IMAGE_FONT_KOREAN_ASCII_OFFSET &&
+                    encoding_get() == ENCODING_KOREAN ? img->original.width : img->width)) / 2, y - height, color, SCALE_NONE);
             }
             current_x -= number_width;
         }

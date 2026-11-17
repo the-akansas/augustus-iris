@@ -158,7 +158,7 @@ static void draw_invasion_button(const grid_box_item *item)
 
     if (invasion->type != INVASION_TYPE_DISTANT_BATTLE && invasion->type != INVASION_TYPE_CAESAR) {
         if (invasion->from + 1 == 9) {
-            text_draw(string_from_ascii("RND"), 352, item->y + 7, FONT_SMALL_PLAIN, 0);
+            text_draw(translation_for(TR_EDITOR_EARTHQUAKE_RANDOM), 352, item->y + 7, FONT_SMALL_PLAIN, 0);
         } else {
             text_draw_number(invasion->from + 1, '@', " ", 355, item->y + 7, FONT_NORMAL_BLACK, 0);
         }
@@ -174,12 +174,12 @@ static void draw_invasion_button(const grid_box_item *item)
         } else if (invasion->attack_type == FORMATION_ATTACK_TROOPS) {
             text_draw(string_from_ascii("T"), 419, item->y + 7, FONT_SMALL_PLAIN, COLOR_FONT_RED);
         } else if (invasion->attack_type == FORMATION_ATTACK_RANDOM) {
-            text_draw(string_from_ascii("RND"), 410, item->y + 7, FONT_SMALL_PLAIN, 0);
+            text_draw(translation_for(TR_EDITOR_EARTHQUAKE_RANDOM), 410, item->y + 7, FONT_SMALL_PLAIN, 0);
         }
     }
 
     if (invasion->repeat.times == INVASIONS_REPEAT_INFINITE) {
-        text_draw(string_from_ascii("INF"), 473, item->y + 7, FONT_SMALL_PLAIN, 0);
+        text_draw(translation_for(TR_CONFIG_INFINITE), 473, item->y + 7, FONT_SMALL_PLAIN, 0);
     } else if (invasion->repeat.times == 0) {
         text_draw(string_from_ascii("-"), 480, item->y + 7, FONT_NORMAL_BLACK, 0);
     } else {

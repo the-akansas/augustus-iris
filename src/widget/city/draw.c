@@ -1,4 +1,5 @@
 #include "draw.h"
+#include "multiplayer/route_post.h"
 
 #include "assets/assets.h"
 #include "building/animation.h"
@@ -30,6 +31,7 @@
 #include "game/state.h"
 #include "graphics/clouds.h"
 #include "graphics/graphics.h"
+#include "widget/city/city.h"
 #include "graphics/image.h"
 #include "graphics/renderer.h"
 #include "graphics/weather.h"
@@ -753,6 +755,15 @@ static void draw_senate_rating_flags(const building *b, int x, int y, color_t co
     }
 }
 
+void widget_city_draw_post_stock(const building*b,int x,int y,color_t color_mask,float scale){
+    static const int dx[]={30,90,0,60,120,30,90,60},dy[]={-15,-15,0,0,0,15,15,30};
+    static const int small_dx[]={0,60,30},small_dy[]={0,0,15};
+    int slot=0,limit=b->size==2?3:8;
+    for(int r=RESOURCE_MIN;r<RESOURCE_MAX && slot<limit;r++)for(int q=b->resources[r];q>0 && slot<limit;q-=4,slot++){
+        int n=q>4?4:q,id=resource_get_data(r)->image.storage+n-1;
+        image_draw_isometric_top_from_draw_tile(id,x+(b->size==2?small_dx[slot]:dx[slot]),y+(b->size==2?small_dy[slot]:dy[slot]),color_mask,scale);
+    }
+}
 static void draw_building_top(int x, int y, int grid_offset, color_t color_mask)
 {
     building *b = building_get(map_building_at(grid_offset));
@@ -766,6 +777,27 @@ static void draw_building_top(int x, int y, int grid_offset, color_t color_mask)
         draw_entertainment_spectators(b, x, y, color_mask);
         draw_workshop_raw_material_storage(b, x, y, color_mask);
         draw_highway_station_stock(b, x, y, color_mask);
+        if(b->type==BUILDING_PLAYER_TRADE_POST){
+            widget_city_draw_post_stock(b,x,y,color_mask,draw_context.scale);
+            const image *post=image_get(map_image_at(grid_offset));
+            int top=post->top ? post->top->original.height-15 : 0;
+            color_t partner=mp_route_peer_color(b->subtype.orientation);
+            /* Roof of the warehouse office (the original roof piece the post art is
+             * built from) washed in the partner player's colour; shading stays. */
+            /* Roof tiles only (mask made from the original roof piece), original shading kept and
+             * brightened, multiplied by the partner player's colour. Walls and posts stay original. */
+            if(post->top){
+                static int roof=-1;if(roof<0){roof=assets_get_image_id("Admin_Logistics","Player Trade Roof Shade");if(roof==assets_get_image_id("Admin_Logistics",""))roof=0;} /* missing asset gives the roadblock image: draw nothing */
+                if(roof){
+                    int rx=x+(b->size==2?26:56),ry=y-(post->top->original.height-FOOTPRINT_HALF_HEIGHT);
+                    color_t tint=((partner&0x00ffffffu)|0xff000000u)&color_mask;
+                    image_draw(roof,rx,ry,tint,draw_context.scale);
+                }
+            }
+            /* Original warehouse pennant, washed in the partner player's colour. */
+            mp_draw_player_tint(mp_player_pennant_image(),x+30*(b->size-1)+19,y-top-14,
+                partner,color_mask,draw_context.scale);
+        }
 
         return;
     }

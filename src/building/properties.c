@@ -71,6 +71,16 @@ static struct min_max min_max_for_house_data_types[MODEL_HOUSE_MAX] = {
 */
 
 static building_properties properties[BUILDING_TYPE_MAX] = {
+    [BUILDING_PLAYER_TRADE_POST] = {
+        .size = 3, .fire_proof = 1,
+        .sound_id = SOUND_CITY_DEPOT,
+        .custom_asset.group = "Admin_Logistics",
+        .custom_asset.id = "Player Trade Warehouse",
+        .event_data.attr = "player_trade_post",
+        .building_model_data = {.cost = 100, .desirability_value = -2,
+            .desirability_step = 1, .desirability_step_size = 1,
+            .desirability_range = 2, .laborers = 0}
+    },
     [BUILDING_ANY] = {
         .event_data.attr = "any",
         .event_data.key = TR_PARAMETER_VALUE_BUILDING_ANY
@@ -2117,7 +2127,7 @@ static building_properties properties[BUILDING_TYPE_MAX] = {
         .size = 1,
         .fire_proof = 1,
         .custom_asset.group = "Aesthetics",
-        .custom_asset.id = "Garden_Gate",
+        .custom_asset.id = "Garden_Gate_A",
         .event_data.attr = "looped_garden_gate",
         .building_model_data = {.cost = 12, .desirability_value = 0, .desirability_step = 0,
             .desirability_step_size = 0, .desirability_range = 0, .laborers = 0}
@@ -2136,7 +2146,7 @@ static building_properties properties[BUILDING_TYPE_MAX] = {
         .size = 1,
         .fire_proof = 1,
         .custom_asset.group = "Aesthetics",
-        .custom_asset.id = "Garden_Wall_C",
+        .custom_asset.id = "Garden_Wall_C_01",
         .event_data.attr = "panelled_garden_wall",
         .building_model_data = {.cost = 12, .desirability_value = 3, .desirability_step = 1,
             .desirability_step_size = -1, .desirability_range = 3, .laborers = 0}
@@ -2250,7 +2260,7 @@ static building_properties properties[BUILDING_TYPE_MAX] = {
         .sound_id = SOUND_CITY_NATIVE_DECORATION,
         .fire_proof = 1,
         .custom_asset.group = "Terrain_Maps",
-        .custom_asset.id = "Native_Monument_Central_01",
+        .custom_asset.id = "Native_L_Monument_Central_01",
         .event_data.attr = "native_monument",
         .building_model_data = {.cost = 0, .desirability_value = 15, .desirability_step = 2,
             .desirability_step_size = -2, .desirability_range = 8, .laborers = 0}
@@ -2395,7 +2405,7 @@ void model_reset(void)
 void model_save_model_data(buffer *buf)
 {
     int buf_size = BUFFER_SIZE + 8;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(1, buf_size);
 
     buffer_init(buf, buf_data, buf_size);
     // Save the buffer sizes of houses and buildings so on load we load the right amount of data.
@@ -2419,8 +2429,11 @@ void model_load_model_data(buffer *buf, int scenario_version)
         buildings_size = buffer_read_i32(buf);
         houses_size = buffer_read_i32(buf);
     }
+    buildings[BUILDING_PLAYER_TRADE_POST] = properties[BUILDING_PLAYER_TRADE_POST].building_model_data;
     buffer_read_raw(buf, buildings, buildings_size);
     buffer_read_raw(buf, houses, houses_size);
+    /* Multiplayer posts remain unmanned when loading an older staffed model. */
+    buildings[BUILDING_PLAYER_TRADE_POST].laborers = 0;
 }
 
 model_house *model_get_house(house_level level)

@@ -60,7 +60,7 @@ void city_military_update_totals(void)
     city_data.military.total_legions = 0;
     for (int i = 1; i < formation_count(); i++) {
         const formation *m = formation_get(i);
-        if (m->in_use && m->is_legion) {
+        if (m->in_use && m->is_legion && !m->mp_expedition_role) { /* visiting support costs its host nothing */
             city_data.military.total_legions++;
             city_data.military.total_soldiers += m->num_figures;
             if (m->empire_service && m->num_figures > 0) {

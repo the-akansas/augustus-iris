@@ -1,4 +1,6 @@
 #include "cheats.h"
+#include "multiplayer/clock.h"
+#include "multiplayer/visit.h"
 
 #include "building/construction.h"
 #include "building/destruction.h"
@@ -121,6 +123,19 @@ static struct {
     int filled_markets;
 } data;
 
+void game_cheat_reset(void)
+{
+    memset(&data, 0, sizeof(data));
+    map_editor_warning_shown = 0;
+}
+
+int game_cheat_allowed(void)
+{
+    if (mp_visit_active()) return 0;
+    if (config_room_active()) return config_room_value(CONFIG_ROOM_ALLOW_CHEATS) == 1;
+    return !mp_clock_active();
+}
+
 static int parse_word(uint8_t *string, uint8_t *word)
 {
     int count = 0;
@@ -153,6 +168,7 @@ static int parse_integer(uint8_t *string, int *value)
 
 void game_cheat_activate(void)
 {
+    if (!game_cheat_allowed()) { game_cheat_reset(); return; }
     if (window_is(WINDOW_BUILDING_INFO)) {
         building_type b_type = window_building_info_get_building_type();
         switch (b_type) { //add more buildings to prevent debugging softlock
@@ -174,6 +190,7 @@ void game_cheat_activate(void)
 
 int game_cheat_tooltip_enabled(void)
 {
+    if (!game_cheat_allowed()) return 0;
     if (config_get(CONFIG_DEBUG_START_WITH_TOOLTIP)) {
         data.tooltip_enabled = (config_get(CONFIG_DEBUG_START_WITH_TOOLTIP));
     }
@@ -182,6 +199,7 @@ int game_cheat_tooltip_enabled(void)
 
 void game_cheat_money(void)
 {
+    if (!game_cheat_allowed()) { game_cheat_reset(); return; }
     if (data.is_cheating) {
         city_finance_process_cheat();
         window_invalidate();
@@ -190,6 +208,7 @@ void game_cheat_money(void)
 
 void game_cheat_victory(void)
 {
+    if (!game_cheat_allowed()) { game_cheat_reset(); return; }
     if (data.is_cheating) {
         city_victory_force_win();
     }
@@ -203,6 +222,7 @@ void game_cheat_breakpoint(void)
 
 void game_cheat_console(void)
 {
+    if (!game_cheat_allowed()) { game_cheat_reset(); return; }
     if (data.is_cheating) {
         building_construction_clear_type();
         window_city_show();
@@ -345,6 +365,7 @@ static void game_cheat_incite_riot(uint8_t *args)
 
 void game_cheat_show_custom_events(uint8_t *args)
 {
+    if (!game_cheat_allowed()) { game_cheat_reset(); return; }
     if (data.is_cheating) {
         window_editor_scenario_events_show();
     }
@@ -352,6 +373,7 @@ void game_cheat_show_custom_events(uint8_t *args)
 
 void game_cheat_show_editor(uint8_t *args)
 {
+    if (!game_cheat_allowed()) { game_cheat_reset(); return; }
     if (data.is_cheating) {
         window_editor_attributes_show();
         if (!map_editor_warning_shown) {
@@ -426,6 +448,7 @@ static void game_cheat_fill_markets(uint8_t *args)
 
 int game_cheat_filled_markets(void)
 {
+    if (!game_cheat_allowed()) return 0;
     return data.filled_markets;
 }
 
@@ -436,6 +459,7 @@ void game_cheat_reset_markets_filled(void)
 
 void game_cheat_parse_command(uint8_t *command)
 {
+    if (!game_cheat_allowed()) { game_cheat_reset(); return; }
     uint8_t command_to_call[MAX_COMMAND_SIZE];
     int next_arg = parse_word(command, command_to_call);
     for (int i = 0; i < NUMBER_OF_COMMANDS; i++) {
@@ -446,13 +470,16 @@ void game_cheat_parse_command(uint8_t *command)
 }
 int game_cheat_extra_legions(void)
 {
+    if (!game_cheat_allowed()) return 0;
     return data.extra_legions_unlocked;
 }
 int game_cheat_disabled_legions_consumption(void)
 {
+    if (!game_cheat_allowed()) return 0;
     return data.disabled_legions_consumption;
 }
 int game_cheat_disabled_invasions(void)
 {
+    if (!game_cheat_allowed()) return 0;
     return data.disabled_invasions;
 }

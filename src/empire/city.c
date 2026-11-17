@@ -1,4 +1,5 @@
 #include "city.h"
+#include "multiplayer/clock.h"
 
 #include "assets/assets.h"
 #include "building/granary.h"
@@ -41,6 +42,24 @@
 #define EMPIRE_CITY_CURRENT_BUF_SIZE (20 + 2 * RESOURCE_MAX)
 
 static array(empire_city) cities;
+
+int empire_city_reserve_for_player(int name_id)
+{
+    empire_city *city;
+    array_foreach(cities, city) {
+        if (!city->in_use || city->name_id != name_id) continue;
+        if (city->type != EMPIRE_CITY_TRADE && city->type != EMPIRE_CITY_PLAYER && city->type != EMPIRE_CITY_FUTURE_ROMAN) return 0;
+        // Only new/unopened routes may be converted; never orphan existing traders.
+        if (city->is_open) return 0;
+        for (int i = 0; i < EMPIRE_CITY_MAX_TRADERS; i++) {
+            if (city->trader_figure_ids[i]) return 0;
+        }
+        city->type = EMPIRE_CITY_PLAYER;
+        empire_object_get_full(city->empire_object_id)->city_type=EMPIRE_CITY_PLAYER;
+        return 1;
+    }
+    return 0;
+}
 
 static int city_in_use(const empire_city *city)
 {
@@ -147,6 +166,9 @@ int empire_can_export_resource(int resource)
 
 static int can_produce_resource_naturally(resource_type resource)
 {
+    /* Existing creator SAVs also obey the production buildings selected by their author. */
+    if(scenario_is_custom() && scenario_is_open_play() && scenario_empire_id()==SCENARIO_CUSTOM_EMPIRE && (resource_is_food(resource) || resource_is_raw_material(resource)))
+        return scenario_allowed_building(resource_get_data(resource)->industry);
     empire_city *city;
     array_foreach(cities, city) {
         if (city->in_use && city->type == EMPIRE_CITY_OURS && city->sells_resource[resource] == 1) {
@@ -474,6 +496,7 @@ static int generate_trader(int city_id, empire_city *city)
 void empire_city_open_trade(int city_id, int apply_cost)
 {
     empire_city *city = array_item(cities, city_id);
+    if (city->type != EMPIRE_CITY_TRADE) return;
     full_empire_object *full = empire_object_get_full(city->empire_object_id);
     if (apply_cost) {
         city_finance_process_sundry(city->cost_to_open);
@@ -496,7 +519,7 @@ void empire_city_generate_trader(void)
 {
     empire_city *city;
     array_foreach(cities, city) {
-        if (!city->in_use || !city->is_open) {
+        if (!city->in_use || !city->is_open || city->type == EMPIRE_CITY_PLAYER) {
             continue;
         }
         if (city->is_sea_trade) {
@@ -581,7 +604,7 @@ const uint8_t *empire_city_get_name(const empire_city *city)
 void empire_city_save_state(buffer *buf)
 {
     int buf_size = sizeof(int32_t) + cities.size * EMPIRE_CITY_CURRENT_BUF_SIZE;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(1, buf_size);
     buffer_init(buf, buf_data, buf_size);
     buffer_write_i32(buf, EMPIRE_CITY_CURRENT_BUF_SIZE);
 

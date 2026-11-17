@@ -162,7 +162,7 @@ static void draw_request_button(const grid_box_item *item)
     text_draw_number(request->ignored_disfavor, '-', " ", 455, item->y + 7, FONT_NORMAL_BLACK, 0);
 
     if (request->repeat.times == REQUESTS_REPEAT_INFINITE) {
-        text_draw(string_from_ascii("INF"), 493, item->y + 7, FONT_SMALL_PLAIN, 0);
+        text_draw(translation_for(TR_CONFIG_INFINITE), 493, item->y + 7, FONT_SMALL_PLAIN, 0);
     } else if (request->repeat.times == 0) {
         text_draw(string_from_ascii("-"), 500, item->y + 7, FONT_NORMAL_BLACK, 0);
     } else {

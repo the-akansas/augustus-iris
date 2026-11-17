@@ -1,4 +1,5 @@
 #include "storage.h"
+#include "multiplayer/post_logistics.h"
 
 #include "building/building.h"
 #include "building/granary.h"
@@ -49,6 +50,7 @@ int building_storage_get_array_size(void)
 
 int building_storage_try_add_resource(building *b, int resource, int amount, int is_produced)
 {
+    if(b->type==BUILDING_PLAYER_TRADE_POST)return mp_post_add(b,resource,amount);
     if (b->type == BUILDING_GRANARY) {
         return building_granary_try_add_resource(b, resource, amount, is_produced, 1);
     } else if (b->type == BUILDING_WAREHOUSE) {
@@ -65,9 +67,9 @@ void building_storage_reset_building_ids(void)
         storage->building_id = 0;
     }
 
-    static const building_type types[] = { BUILDING_GRANARY, BUILDING_WAREHOUSE };
+    static const building_type types[] = { BUILDING_GRANARY, BUILDING_WAREHOUSE, BUILDING_PLAYER_TRADE_POST };
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
         building_type type = types[i];
         for (building *b = building_first_of_type(type); b; b = b->next_of_type) {
             if (b->state == BUILDING_STATE_UNUSED) {
@@ -190,6 +192,7 @@ int building_storage_count_stored_resource_types(int building_id)
 
 int building_storage_get_amount(building *b, resource_type resource)
 {
+    if(b->type==BUILDING_PLAYER_TRADE_POST)return b->resources[resource];
     if (b->type == BUILDING_GRANARY) {
         return building_granary_get_amount(b, resource);
     } else if (b->type == BUILDING_WAREHOUSE) {
@@ -210,6 +213,7 @@ building_storage_state building_storage_get_state(building *b, int resource, int
     if (b->has_plague || (b->state != BUILDING_STATE_IN_USE && b->state != BUILDING_STATE_CREATED)) {
         return BUILDING_STORAGE_STATE_NOT_ACCEPTING;
     }
+    if(b->type==BUILDING_PLAYER_TRADE_POST)return !relative || mp_post_space(b)>0?BUILDING_STORAGE_STATE_ACCEPTING:BUILDING_STORAGE_STATE_NOT_ACCEPTING;
     if (b->type != BUILDING_GRANARY && b->type != BUILDING_WAREHOUSE) { //safeguard
         return BUILDING_STORAGE_STATE_NOT_ACCEPTING;
     }
@@ -346,6 +350,7 @@ void building_storage_cycle_partial_resource_state(int storage_id, resource_type
 
 int building_storage_accepts_storage(building *b, resource_type resource, int *understaffed)
 {
+    if(b->type==BUILDING_PLAYER_TRADE_POST)return b->state==BUILDING_STATE_IN_USE && !b->has_plague && mp_post_space(b)>0;
     if (b->type == BUILDING_WAREHOUSE) {
         return building_warehouse_accepts_storage(b, resource, understaffed);
     } else if (b->type == BUILDING_GRANARY) {
@@ -506,6 +511,7 @@ int building_storage_summary_tooltip(building *b, char *tooltip_text, int max_le
 
 int building_storage_resource_max_storable(building *b, resource_type resource_id)
 {
+    if(b->type==BUILDING_PLAYER_TRADE_POST)return 32;
     if (b->type == BUILDING_GRANARY && resource_id >= RESOURCE_MIN_NON_FOOD) {
         return 0;
     }
@@ -547,7 +553,7 @@ void decode_legacy_storage_state(uint8_t legacy, resource_storage_entry *entry)
 void building_storage_save_state(buffer *buf)
 {
     int buf_size = 4 + storages.size * STORAGE_CURRENT_BUFFER_SIZE;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(1, buf_size);
     buffer_init(buf, buf_data, buf_size);
     buffer_write_i32(buf, STORAGE_CURRENT_BUFFER_SIZE);
 

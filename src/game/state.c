@@ -1,3 +1,5 @@
+#include "multiplayer/clock.h"
+#include "multiplayer/chat.h"
 #include "state.h"
 
 #include "city/victory.h"
@@ -30,7 +32,7 @@ void game_state_init(void)
 
 int game_state_is_paused(void)
 {
-    return data.paused;
+    return mp_clock_active()?mp_clock_speed()==0:data.paused;
 }
 
 void game_state_pause(void)
@@ -45,6 +47,7 @@ void game_state_unpause(void)
 
 void game_state_toggle_paused(void)
 {
+    if(mp_clock_active()){static int resume=80;if(mp_clock_speed())resume=mp_clock_speed();mp_client_speed(mp_clock_speed()?0:resume);return;}
     data.paused = data.paused ? 0 : 1;
 }
 

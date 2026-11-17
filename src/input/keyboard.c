@@ -1,6 +1,7 @@
 #include "keyboard.h"
 
 #include "core/encoding.h"
+#include "core/mp_i18n.h"
 #include "core/string.h"
 #include "game/system.h"
 #include "graphics/text.h"
@@ -110,6 +111,7 @@ void keyboard_start_capture(uint8_t *text, int max_length, int allow_punctuation
                             int box_width, font_t font, const char *allowed_chars)
 {
     data.capture = 1;
+    data.editing_length = 0;
     data.text = text;
     data.length = string_length(text);
     data.cursor_position = data.length;
@@ -125,6 +127,8 @@ void keyboard_start_capture(uint8_t *text, int max_length, int allow_punctuation
 
 void keyboard_refresh(void)
 {
+    data.editing_length = 0;
+    if (!data.text) return;
     data.length = string_length(data.text);
     data.cursor_position = data.length;
     update_viewport(1);
@@ -133,6 +137,7 @@ void keyboard_refresh(void)
 void keyboard_stop_capture(void)
 {
     data.capture = 0;
+    data.editing_length = 0;
     data.text = 0;
     data.cursor_position = 0;
     data.length = 0;
@@ -236,7 +241,7 @@ static void move_cursor_right(void)
 
 static void insert_char(const uint8_t *value, int bytes)
 {
-    if (data.length + bytes == data.max_length) {
+    if (data.length + bytes >= data.max_length) {
         return;
     }
     for (int i = 0; i < bytes; i++) {
@@ -392,7 +397,11 @@ int keyboard_text(const char *text_utf8)
     }
 
     uint8_t internal_char[100];
+    /* Typed text is never looked up in the language catalog (2026-11-14): a Korean word typed in another
+     * language's screens (a chat line, a name) must stay exactly as typed. */
+    mp_i18n_suspend(1);
     encoding_from_utf8(text_utf8, internal_char, 100);
+    mp_i18n_suspend(0);
 
     int index = 0;
     int length = 0;

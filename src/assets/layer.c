@@ -425,16 +425,19 @@ int layer_add_from_image_id(layer *l, const char *group_id, const char *image_id
             return 0;
         }
     } else {
-        // Handle "aux:N" prefix which marks an image group in the auxiliary main
-        // file (c3.555 loaded alongside c3map.555 in editor mode). When the aux
-        // atlas isn't loaded (e.g. in-game where c3.555 IS the main file), fall
-        // back to the regular main group lookup so the same XML works in both
-        // editor and game.
-        int prefer_aux = 0;
+        // Numeric groups in the shared Augustus assets refer to c3.555, not
+        // c3map.555. In the editor that game atlas is loaded as the auxiliary
+        // atlas before assets_init; editor_is_active() is not set yet then.
+        // Keep those references stable across game/editor transitions. Explicit
+        // "main:N" remains available for a layer that needs the current primary
+        // atlas (c3map.555 in the editor), and "aux:N" keeps its existing meaning.
+        int prefer_aux = 1;
         const char *group_str = group_id;
         if (strncmp(group_str, "aux:", 4) == 0) {
-            prefer_aux = 1;
             group_str += 4;
+        } else if (strncmp(group_str, "main:", 5) == 0) {
+            prefer_aux = 0;
+            group_str += 5;
         }
         int group = atoi(group_str);
         if (group >= 0 && group < IMAGE_MAX_GROUPS) {

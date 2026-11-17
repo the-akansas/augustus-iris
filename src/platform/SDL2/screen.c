@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "platform/screen.h"
 
 #include "city/view.h"
@@ -53,8 +54,8 @@ static int scale_pixels_to_logical(int pixel_value)
 
 static int get_max_scale_percentage(int pixel_width, int pixel_height)
 {
-    int width_scale_pct = (int) (pixel_width * 100 / scale.screen_density / MINIMUM.WIDTH);
-    int height_scale_pct = (int) (pixel_height * 100 / scale.screen_density / MINIMUM.HEIGHT);
+    int width_scale_pct = (int) (pixel_width * 100 / scale.screen_density / (getenv("AUGUSTUS_MP_BRIDGE") ? 800 : MINIMUM.WIDTH));
+    int height_scale_pct = (int) (pixel_height * 100 / scale.screen_density / (getenv("AUGUSTUS_MP_BRIDGE") ? 600 : MINIMUM.HEIGHT));
     return SDL_min(width_scale_pct, height_scale_pct);
 }
 
@@ -101,7 +102,7 @@ static void set_scale_percentage(int new_scale, int pixel_width, int pixel_heigh
     apply_max_scale(pixel_width, pixel_height);
 
     SDL_SetWindowMinimumSize(SDL.window,
-        scale_logical_to_pixels(MINIMUM.WIDTH), scale_logical_to_pixels(MINIMUM.HEIGHT));
+        scale_logical_to_pixels((getenv("AUGUSTUS_MP_BRIDGE") ? 800 : MINIMUM.WIDTH)), scale_logical_to_pixels((getenv("AUGUSTUS_MP_BRIDGE") ? 600 : MINIMUM.HEIGHT)));
 }
 
 #if !defined(_WIN32) && !defined(__APPLE__)
@@ -122,6 +123,13 @@ int platform_screen_create(const char *title, int display_scale_percentage, int 
 #ifdef __ANDROID__
     scale.screen_density = android_get_screen_density();
 #endif
+    if (getenv("AUGUSTUS_VISUAL_POSITION")) {
+        display_scale_percentage = 100;
+        setting_set_display(0, 800, 600);
+        if (getenv("AUGUSTUS_VISUAL_HOST_AUDIO")) {
+            for (int i = 0; i < 4; i++) setting_reset_sound(i, 1, 60);
+        }
+    }
     set_scale_percentage(display_scale_percentage, 0, 0);
 
     int width, height;
@@ -133,6 +141,7 @@ int platform_screen_create(const char *title, int display_scale_percentage, int 
         height = mode.h;
     } else {
         setting_window(&width, &height);
+        if(getenv("AUGUSTUS_MP_BRIDGE")){width=SDL_max(width,800);height=SDL_max(height,600);}
         width = scale_logical_to_pixels(width);
         height = scale_logical_to_pixels(height);
     }
@@ -162,8 +171,13 @@ int platform_screen_create(const char *title, int display_scale_percentage, int 
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
 
-    SDL.window = SDL_CreateWindow(title,
-        SDL_WINDOWPOS_CENTERED_DISPLAY(display_id), SDL_WINDOWPOS_CENTERED_DISPLAY(display_id),
+    int initial_x = SDL_WINDOWPOS_CENTERED_DISPLAY(display_id);
+    int initial_y = initial_x;
+    const char *position = getenv("AUGUSTUS_VISUAL_POSITION");
+    if (position) sscanf(position, "%d,%d", &initial_x, &initial_y);
+    const char *caption = getenv("AUGUSTUS_VISUAL_TITLE");
+    if (caption) title = caption;
+    SDL.window = SDL_CreateWindow(title, initial_x, initial_y,
         width, height, flags);
 
     if (!SDL.window) {
@@ -226,8 +240,13 @@ int system_scale_display(int display_scale_percentage)
 {
     int width, height;
     SDL_GetWindowSize(SDL.window, &width, &height);
+    int previous = scale.percentage;
     set_scale_percentage(display_scale_percentage, width, height);
-    platform_screen_resize(width, height, 1);
+    if (!platform_screen_resize(width, height, 1)) {
+        set_scale_percentage(previous, width, height);
+        platform_screen_resize(width, height, 1);
+        return 0;
+    }
     return scale.percentage;
 }
 
@@ -296,6 +315,7 @@ void platform_screen_set_windowed(void)
     }
     int logical_width, logical_height;
     setting_window(&logical_width, &logical_height);
+    if(getenv("AUGUSTUS_MP_BRIDGE")){logical_width=SDL_max(logical_width,800);logical_height=SDL_max(logical_height,600);}
     int pixel_width = scale_logical_to_pixels(logical_width);
     int pixel_height = scale_logical_to_pixels(logical_height);
     int display = SDL_GetWindowDisplayIndex(SDL.window);
@@ -314,6 +334,7 @@ void platform_screen_set_window_size(int logical_width, int logical_height)
     if (system_is_fullscreen_only()) {
         return;
     }
+    if(getenv("AUGUSTUS_MP_BRIDGE")){logical_width=SDL_max(logical_width,800);logical_height=SDL_max(logical_height,600);}
     int pixel_width = scale_logical_to_pixels(logical_width);
     int pixel_height = scale_logical_to_pixels(logical_height);
     int display = SDL_GetWindowDisplayIndex(SDL.window);

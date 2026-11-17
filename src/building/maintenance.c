@@ -3,6 +3,7 @@
 #include "building/building.h"
 #include "building/destruction.h"
 #include "building/list.h"
+#include "building/tile_repair.h"
 #include "building/monument.h"
 #include "city/buildings.h"
 #include "city/map.h"
@@ -56,7 +57,7 @@ void building_maintenance_update_burning_ruins(void)
         }
         b->fire_duration++;
         if (b->fire_duration > 32) {
-            game_undo_disable();
+            game_undo_prepare_world_change();
             b->state = BUILDING_STATE_RUBBLE;
             map_building_tiles_set_rubble(i, b->x, b->y, b->size);
             recalculate_terrain = 1;
@@ -111,6 +112,9 @@ void building_maintenance_update_burning_ruins(void)
     }
     if (recalculate_terrain) {
         map_routing_update_land();
+        /* A ruin goes out only on its own tile. Tiles of the old building that still pointed at it kept burning
+         * forever: no spread, no prefect, no clearing (multiplayer saves, 2026-11-14). */
+        building_tile_repair_all();
     }
 }
 

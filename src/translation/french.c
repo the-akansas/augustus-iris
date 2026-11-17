@@ -32,9 +32,9 @@ static translation_string all_strings[] = {
     {TR_CONFIG_YOU_WILL_LOSE_YOUR_HOTKEYS, "Vous perdrez tous vos raccourcis."},
     {TR_CONFIG_TITLE, "Options de configuration d'Augustus"},
     {TR_CONFIG_HEADER_GENERAL, "Configuration générale"},
-    {TR_CONFIG_HEADER_UI_CHANGES, "Configuration de l'interface"},
+    {TR_CONFIG_HEADER_UI_CHANGES, "Interface"},
     {TR_CONFIG_HEADER_GAMEPLAY_CHANGES, "Difficulté"},
-    {TR_CONFIG_HEADER_CITY_MANAGEMENT_CHANGES, "Gestion de la cité"},
+    {TR_CONFIG_HEADER_CITY_MANAGEMENT_CHANGES, "Gestion"},
     {TR_CONFIG_LANGUAGE_LABEL, "Langue :"},
     {TR_CONFIG_LANGUAGE_DEFAULT, "(par défaut)"},
     {TR_CONFIG_DEFAULT_PLAYER_NAME, "Nom par défaut :"},
@@ -2397,6 +2397,7 @@ static translation_string all_strings[] = {
     {TR_EDITOR_TOOL_BEACH, "Plage"},
     {TR_TERRAIN_BEACH, "Plage"},
     {TR_TERRAIN_BEACH_DESC, "Une plage de sable fin. Agréable à contempler et prisée des flâneurs qui viennent s'y prélasser, elle fournit du sable et de l'argile en abondance à la cité."},
+    {TR_CONFIG_MP_LANGUAGE, "Langue d'affichage"},
 };
 
 void translation_french(const translation_string **strings, int *num_strings)

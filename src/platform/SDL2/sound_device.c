@@ -12,9 +12,11 @@
 
 #include "SDL.h"
 #include "SDL_mixer.h"
+static Mix_Music *load_music_file(const char *filename);
 
 #include <stdlib.h>
 #include <string.h>
+#include "audio_file.inc"
 
 #ifdef __vita__
 #include <psp2/io/fcntl.h>
@@ -112,6 +114,15 @@ static void init_channels(void)
 
 void sound_device_open(void)
 {
+    /* Test and isolated spectator instances must never open a playback device.
+       An explicit dummy request must not fall back to DirectSound/WASAPI. */
+    const char *requested = SDL_getenv("SDL_AUDIODRIVER");
+    if (SDL_getenv("AUGUSTUS_TEST_SILENT") || SDL_getenv("AUGUSTUS_CITY_VISIT") ||
+        (requested && !SDL_strcmp(requested, "dummy"))) {
+        SDL_Log("Audio output disabled: no playback device opened");
+        return;
+    }
+
 #ifdef USE_SDL_AUDIOSTREAM
     custom_music.use_audiostream = HAS_AUDIOSTREAM();
 #endif
@@ -195,7 +206,10 @@ static Mix_Chunk *load_chunk(const char *filename)
     if (!filename) {
         return 0;
     }
-#if defined(__vita__) || defined(__ANDROID__)
+#if defined(_WIN32)
+    SDL_RWops *rw = audio_file_open(filename);
+    return rw ? Mix_LoadWAV_RW(rw, SDL_TRUE) : NULL;
+#elif defined(__vita__) || defined(__ANDROID__)
     FILE *fp = file_open(filename, "rb");
     if (!fp) {
         return NULL;
@@ -338,7 +352,7 @@ int sound_device_play_music(const char *filename, int volume_pct, int loop)
         SDL_RWops *sdl_fp = SDL_RWFromFP(fp, SDL_TRUE);
         data.music = Mix_LoadMUS_RW(sdl_fp, SDL_TRUE);
 #else
-        data.music = Mix_LoadMUS(filename);
+        data.music = load_music_file(filename);
 #endif
     }
     if (!data.music) {
@@ -383,7 +397,7 @@ int sound_device_play_track(const char *filename, int volume_pct, void (*on_fini
         SDL_RWops *sdl_music = SDL_RWFromMem(data.custom_music, (int) size);
         data.music = Mix_LoadMUS_RW(sdl_music, SDL_TRUE);
     } else {
-        data.music = Mix_LoadMUS(filename);
+        data.music = load_music_file(filename);
     }
 
     if (!data.music) {
@@ -615,6 +629,15 @@ static int put_custom_audio_stream(const void *audio_data, int len)
     custom_music.cvt.len = 0;
 
     return 1;
+}
+
+static Mix_Music *load_music_file(const char *filename) {
+#ifdef _WIN32
+    SDL_RWops *rw = audio_file_open(filename);
+    return rw ? Mix_LoadMUS_RW(rw, SDL_TRUE) : NULL;
+#else
+    return Mix_LoadMUS(filename);
+#endif
 }
 
 static void custom_music_callback(void *dummy, Uint8 *dst, int len)

@@ -14,6 +14,8 @@
 #include "map/terrain.h"
 
 static void map_routing_update_land_noncitizen(void);
+static unsigned citizen_revision;
+unsigned map_routing_citizen_revision(void){return citizen_revision;}
 
 void map_routing_update_all(void)
 {
@@ -109,6 +111,7 @@ static int get_land_type_citizen_aqueduct(int grid_offset)
 
 void map_routing_update_land_citizen(void)
 {
+    ++citizen_revision;
     map_grid_init_i8(terrain_land_citizen.items, -1);
     int grid_offset = map_data.start_offset;
     for (int y = 0; y < map_data.height; y++, grid_offset += map_data.border_size) {

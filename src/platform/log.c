@@ -104,6 +104,12 @@ static void finish_message(const char *message, int is_error)
     char log_text[LOG_TEXT_SIZE] = { 0 };
     snprintf(log_text, LOG_TEXT_SIZE, "%s %s\n", is_error ? "ERROR: " : "INFO: ", message);
 
+    /* A long UTF-8 filename must not swallow the line terminator. */
+    size_t end = strlen(log_text);
+    if (!end || log_text[end - 1] != '\n') {
+        if (end >= sizeof(log_text) - 1) end = sizeof(log_text) - 2;
+        log_text[end++] = '\n'; log_text[end] = 0;
+    }
     write_log(log_text);
 }
 
@@ -137,11 +143,11 @@ void platform_log_setup(void)
 {
     const char *filename = "augustus-log.txt";
     const char *backup_filename = "augustus-log-backup.txt";
-    char log_file[FILE_NAME_MAX];
-    char log_file_old[FILE_NAME_MAX];
+    char log_file[FILE_PATH_MAX];
+    char log_file_old[FILE_PATH_MAX];
     const char *pref_dir = platform_get_logging_path();
-    snprintf(log_file, FILE_NAME_MAX, "%s%s", pref_dir ? pref_dir : "", filename);
-    snprintf(log_file_old, FILE_NAME_MAX, "%s%s", pref_dir ? pref_dir : "", backup_filename);
+    snprintf(log_file, FILE_PATH_MAX, "%s%s", pref_dir ? pref_dir : "", filename);
+    snprintf(log_file_old, FILE_PATH_MAX, "%s%s", pref_dir ? pref_dir : "", backup_filename);
     backup_log(log_file, log_file_old);
 
     // On some platforms (vita, android), not removing the file will not empty it when reopening for writing

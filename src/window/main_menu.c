@@ -1,4 +1,15 @@
 #include "main_menu.h"
+#include "multiplayer_lobby.h"
+#include "core/encoding.h"
+#include "multiplayer/chat.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <wchar.h>
+#endif
 
 #include "assets/assets.h"
 #include "core/calc.h"
@@ -23,12 +34,15 @@
 #include "window/config.h"
 #include "window/editor/map.h"
 #include "window/file_dialog.h"
+#include "window/language_select.h"
+#include "core/mp_language.h"
 #include "window/plain_message_dialog.h"
 #include "window/popup_dialog.h"
 #include "window/select_campaign.h"
 #include "window/video.h"
 
-#define MAX_BUTTONS 6
+#define MAX_BUTTONS 8
+static char menu_notice[256];
 
 static void button_click(const generic_button *button);
 
@@ -39,12 +53,35 @@ static struct {
 
 static generic_button buttons[] = {
     {192, 130, 256, 25, button_click, 0, 1},
-    {192, 170, 256, 25, button_click, 0, 2},
-    {192, 210, 256, 25, button_click, 0, 3},
-    {192, 250, 256, 25, button_click, 0, 4},
-    {192, 290, 256, 25, button_click, 0, 5},
-    {192, 330, 256, 25, button_click, 0, 6},
+    {192, 164, 256, 25, button_click, 0, 2},
+    {192, 198, 256, 25, button_click, 0, 3},
+    {192, 232, 256, 25, button_click, 0, 4},
+    {192, 266, 256, 25, button_click, 0, 7},
+    {192, 300, 256, 25, button_click, 0, 8},
+    {192, 334, 256, 25, button_click, 0, 5},
+    {192, 368, 256, 25, button_click, 0, 6},
 };
+
+/* Fixed sibling executables only; no shell or user-supplied command. */
+static int launch_menu_companion(int creator)
+{
+#ifdef _WIN32
+    wchar_t path[4096], command[8192];
+    DWORD length = GetModuleFileNameW(NULL, path, 4096);
+    if (!length || length >= 4000) return 0;
+    wchar_t *end = wcsrchr(path, L'\\');
+    if (!end) return 0;
+    wcscpy(end + 1, creator ? L"Augustus-Scenario-Creator.exe" : L"Augustus.exe");
+    swprintf(command, 8192, creator ? L"\"%ls\"" : L"\"%ls\" --multiplayer", path);
+    STARTUPINFOW startup = {0}; PROCESS_INFORMATION process = {0};
+    startup.cb = sizeof(startup);
+    if (!CreateProcessW(path, command, NULL, NULL, FALSE, 0, NULL, NULL, &startup, &process)) return 0;
+    CloseHandle(process.hThread); CloseHandle(process.hProcess); return 1;
+#else
+    return 0;
+#endif
+}
+
 
 static void draw_version_string(void)
 {
@@ -69,7 +106,7 @@ static void draw_background(void)
 
     if (!window_is(WINDOW_FILE_DIALOG)) {
         graphics_in_dialog();
-        outer_panel_draw(162, 32, 20, 22);
+        outer_panel_draw(162, 32, 20, 25);
         if (!data.logo_image_id) {
             data.logo_image_id = assets_get_image_id("UI", "Main Menu Banner");
         }
@@ -91,12 +128,29 @@ static void draw_foreground(void)
         }
     }
 
-    lang_text_draw_centered(CUSTOM_TRANSLATION, TR_MAIN_MENU_SELECT_CAMPAIGN, 192, 137, 256, FONT_NORMAL_GREEN);
-    lang_text_draw_centered(30, 2, 192, 177, 256, FONT_NORMAL_GREEN);
-    lang_text_draw_centered(30, 3, 192, 217, 256, FONT_NORMAL_GREEN);
-    lang_text_draw_centered(9, 8, 192, 257, 256, FONT_NORMAL_GREEN);
-    lang_text_draw_centered(2, 0, 192, 297, 256, FONT_NORMAL_GREEN);
-    lang_text_draw_centered(30, 5, 192, 337, 256, FONT_NORMAL_GREEN);
+    for (int i = 0; i < MAX_BUTTONS; ++i) {
+        const generic_button *b = &buttons[i];
+        int type = b->parameter1;
+        if (type == 1) lang_text_draw_centered(CUSTOM_TRANSLATION, TR_MAIN_MENU_SELECT_CAMPAIGN, b->x, b->y+7, b->width, FONT_NORMAL_GREEN);
+        else if (type == 2 || type == 3 || type == 5 || type == 6) {
+            int group = type == 5 ? 2 : 30;
+            int text = type == 2 ? 2 : type == 3 ? 3 : type == 5 ? 0 : 5;
+            lang_text_draw_centered(group, text, b->x, b->y+7, b->width, FONT_NORMAL_GREEN);
+        } else {
+            uint8_t label[128];
+            encoding_from_utf8(type == 4 ? "지도 편집기" : type == 7 ? "멀티플레이" : "멀티 시나리오 제작기", label, sizeof(label));
+            text_draw_centered(label,b->x,b->y+7,b->width,FONT_NORMAL_GREEN,0);
+        }
+    }
+    char status[512] = {0}; const char *bridge = getenv("AUGUSTUS_MP_BRIDGE");
+    if (bridge) {
+        char path[2048]; snprintf(path,sizeof(path),"%s/menu-status.txt",bridge);
+        FILE *f=fopen(path,"rb"); if(f){fread(status,1,sizeof(status)-1,f);fclose(f);}
+    }
+    if (menu_notice[0] || status[0]) {
+        uint8_t text[1024]; encoding_from_utf8(menu_notice[0]?menu_notice:status,text,sizeof(text));
+        text_draw_ellipsized(text,176,406,288,FONT_SMALL_PLAIN,0);
+    }
 
     graphics_reset_dialog();
 }
@@ -144,11 +198,32 @@ static void button_click(const generic_button *button)
         window_config_show(CONFIG_FIRST_PAGE, 0, 1);
     } else if (type == 6) {
         window_popup_dialog_show(POPUP_DIALOG_QUIT, confirm_exit, 1);
+    } else if (type == 7) {
+        if (getenv("AUGUSTUS_MP_BRIDGE")) window_multiplayer_lobby_show();
+        else if (launch_menu_companion(0)) system_exit();
+        else strcpy(menu_notice,"Augustus.exe 실행 파일을 확인해 주세요.");
+    } else if (type == 8) {
+        int opened = getenv("AUGUSTUS_MP_BRIDGE") ? mp_client_command("open-creator", "") : launch_menu_companion(1);
+        strcpy(menu_notice,opened?"":"제작기를 열지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
+}
+
+static void open_startup_lobby(void)
+{
+    if (getenv("AUGUSTUS_MP_OPEN_LOBBY") && getenv("AUGUSTUS_MP_BRIDGE")) window_multiplayer_lobby_show();
+}
+
+static void language_chosen(void)
+{
+    window_main_menu_show(0);
+    open_startup_lobby();
 }
 
 void window_main_menu_show(int restart_music)
 {
+    window_multiplayer_leave_to_menu();
+    window_multiplayer_reset();
+    menu_notice[0] = 0;
     if (restart_music) {
         sound_music_play_intro();
     }
@@ -161,4 +236,14 @@ void window_main_menu_show(int restart_music)
         handle_input
     };
     window_show(&window);
+    static int startup_done;
+    if (!startup_done) {
+        startup_done = 1;
+        /* Multilingual build: the first start asks for the display language once (saved in augustus.ini). */
+        if (encoding_get() == ENCODING_KOREAN && mp_language_chosen() < 0 && mp_language_available_count() > 1) {
+            window_language_select_show(language_chosen);
+            return;
+        }
+        open_startup_lobby();
+    }
 }

@@ -3,6 +3,8 @@
 
 #include "figure/figure.h"
 
+void figure_enemy_remote_action(figure *f);
+
 void figure_enemy43_spear_action(figure *f);
 
 void figure_enemy44_sword_action(figure *f);

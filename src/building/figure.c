@@ -267,6 +267,7 @@ static void spawn_dog(building *b)
     }
 }
 
+#include "multiplayer/post_logistics.h"
 static void spawn_figure_warehouse(building *b)
 {
     check_labor_problem(b);
@@ -283,6 +284,7 @@ static void spawn_figure_warehouse(building *b)
         if (has_figure_of_type(b, FIGURE_WAREHOUSEMAN)) {
             return;
         }
+        if(mp_post_supply_spawn(b))return;
         int resource;
         int task = building_warehouse_determine_worker_task(b, &resource);
         if (task != WAREHOUSE_TASK_NONE) {
@@ -312,6 +314,7 @@ static void spawn_figure_granary(building *b)
         if (has_figure_of_type(b, FIGURE_WAREHOUSEMAN)) {
             return;
         }
+        if(mp_post_supply_spawn(b))return;
         int task = building_granary_determine_worker_task(b);
         if (task != GRANARY_TASK_NONE) {
             figure *f = figure_create(FIGURE_WAREHOUSEMAN, b->x + 1, b->y + 1, DIR_4_BOTTOM);
@@ -2347,6 +2350,12 @@ void building_figure_generate(void)
                 case BUILDING_DEPOT:
                     spawn_figure_depot(b);
                     break;
+                case BUILDING_PLAYER_TRADE_POST: {
+                    map_point road;
+                    b->has_road_access=map_has_road_access(b->x,b->y,b->size,&road);
+                    mp_post_spawn(b);
+                    break;
+                }
                 case BUILDING_ARMOURY:
                     spawn_figure_armoury(b);
                     break;

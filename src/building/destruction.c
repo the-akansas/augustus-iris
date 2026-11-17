@@ -33,7 +33,7 @@ static void set_rubble_grid_info_for_all_parts(building *b);
 
 static void destroy_without_rubble(building *b)
 {
-    game_undo_disable();
+    game_undo_prepare_world_change();
     if (b->house_size && b->house_population) {
         city_population_remove_home_removed(b->house_population);
     }
@@ -48,7 +48,7 @@ static void destroy_without_rubble(building *b)
 
 static void destroy_on_fire(building *b, int plagued)
 {
-    game_undo_disable();
+    game_undo_prepare_world_change();
     b->fire_risk = 0;
     b->damage_risk = 0;
     if (b->house_size && b->house_population) {
@@ -205,7 +205,7 @@ void building_destroy_by_collapse(building *b)
     if (building_properties_for_type(b->type)->shared) {
         return;
     }
-    game_undo_disable();
+    game_undo_prepare_world_change();
     b->state = BUILDING_STATE_RUBBLE;
     if (b->type == BUILDING_TOWER) {
         figure_kill_tower_sentries_in_building(b);
@@ -233,7 +233,7 @@ void building_destroy_by_earthquake(building *b)
     if (building_properties_for_type(b->type)->shared) {
         return;
     }
-    game_undo_disable();
+    game_undo_prepare_world_change();
     int grid_offset = b->grid_offset; // save before destroying building
     int size = b->size;
     b->state = BUILDING_STATE_DELETED_BY_GAME;
@@ -299,7 +299,7 @@ void building_destroy_last_placed(void)
     }
     if (last_building) {
         city_message_post(1, MESSAGE_ROAD_TO_ROME_BLOCKED, 0, last_building->grid_offset);
-        game_undo_disable();
+        game_undo_prepare_world_change();
         building_destroy_by_collapse(last_building);
         map_routing_update_land();
     }
@@ -329,7 +329,7 @@ static void set_rubble_grid_info_for_all_parts(building *b)
 
 void building_destroy_by_enemy(int x, int y, int grid_offset)
 {
-    game_undo_disable();
+    game_undo_prepare_world_change();
     int building_id = map_building_at(grid_offset);
     if (building_id > 0) {
         building *b = building_get(building_id);
@@ -362,3 +362,4 @@ void building_destroy_by_enemy(int x, int y, int grid_offset)
     map_routing_update_land();
     map_routing_update_walls();
 }
+

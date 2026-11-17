@@ -7,6 +7,10 @@ int game_can_undo(void);
 
 void game_undo_disable(void);
 
+/* Call BEFORE a world event changes map/building ownership. Multiplayer can
+ * advance while a construction drag holds a snapshot of the old map. */
+void game_undo_prepare_world_change(void);
+
 void game_undo_add_building(building *b);
 
 void game_undo_adjust_building(building *b);

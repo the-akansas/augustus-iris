@@ -66,6 +66,7 @@ int platform_parse_arguments(int argc, char **argv, augustus_args *output_args)
 
     // Set sensible defaults
     output_args->data_directory = 0;
+    output_args->editor_map = 0;
     output_args->display_scale_percentage = 0;
     output_args->cursor_scale_percentage = 0;
     output_args->force_windowed = 0;
@@ -120,6 +121,13 @@ int platform_parse_arguments(int argc, char **argv, augustus_args *output_args)
             }
         } else if (strcmp(argv[i], "--windowed") == 0) {
             output_args->force_windowed = 1;
+        } else if (strcmp(argv[i], "--editor-map") == 0) {
+            if (i + 1 < argc && strncmp(argv[i + 1], "--", 2)) {
+                output_args->editor_map = argv[++i];
+            } else {
+                print_log("Option --editor-map must be followed by a scenario file path");
+                ok = 0;
+            }
         } else if (strcmp(argv[i], "--asset-previewer") == 0) {
             output_args->launch_asset_previewer = 1;
         } else if (strcmp(argv[i], "--enable-joysticks") == 0) {
@@ -160,6 +168,8 @@ int platform_parse_arguments(int argc, char **argv, augustus_args *output_args)
         print_log("--display ID");
         print_log("          Forces the game to start on the specified display, numbered from 0");
         print_log("--asset-previewer");
+        print_log("--editor-map FILE");
+        print_log("          Opens a scenario directly in the native terrain editor");
         print_log("          Runs the extra asset previewer instead of the game");
         print_log("--enable-joysticks");
         print_log("          Enables joystick support");

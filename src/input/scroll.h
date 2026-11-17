@@ -21,6 +21,7 @@ int scroll_for_menu(const mouse *m);
 int scroll_get_delta(const mouse *m, pixel_offset *delta, scroll_type type);
 
 void scroll_drag_start(int is_touch);
+int scroll_handle_middle_mouse(const mouse *m, int can_start);
 int scroll_drag_end(void);
 
 void scroll_stop(void);

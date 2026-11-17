@@ -1,60 +1,24 @@
-# IDE data
-.kdev4
-*.kdev4
-.vs
-.vscode
-/CMakeSettings.json*
-/CMakePresets.json*
-
-# Generated resources
-src/platform/version.c
-res/version.rc
-res/version.txt
-res/julius.icns
-res/shell.html
-res/packed_assets/
-
-# Build output and data directories
-/build*/
-/release
-out/
-cmake-build-debug
-/data
-ext/SDL*/*/
-*~
-*.swp
-.vscode
-ext/mpg123*
-
-# Asset packer
-/res/asset_packer*/build*/
-/res/asset_packer/.ionide/
-/res/asset_packer/CMakeSettings.json*
-
-# Android
-*.iml
-.gradle
-local.properties
-.DS_Store
-/captures
-.externalNativeBuild
-.idea
-.cxx/
+deps/
+build/test24/
+build/local/
+__pycache__/
+*.pyc
+Augustus/runtime/
+Augustus/*.exe
+Augustus/*.dll
+Augustus/rooms/
+Augustus/user-profile/
+Augustus/private-game-data/
+Augustus/creator-cache/
+Augustus/creator-projects/
+Augustus/creator-maps/
+Augustus/roster-cache/
+Augustus/lobby-preview-cache/
+Augustus/test-work/
 *.log
-gradle-daemon-jvm.properties
-/android/build/
-/android/*/build/
-/android/*/release/
-/android/augustus.keystore
-/android/julius.keystore
-/android/play-publisher.json
-/android/augustus/src/main/play
-/android/julius/src/main/play
-/android/SDL2/src/main/java
-/android/augustus/libs
+# made on the player's PC from the player's own Caesar III (Augustus/caesar3_tints.py)
+Augustus/assets/Graphics/MP_Flags/E*.png
+Augustus/assets/Graphics/MP_Flags/S_*.png
+Augustus/assets/Graphics/Admin_Logistics/Player_Trade_Roof_Shade.png
 
-# lib files
-ext/SDL2/*.zip
-ext/SDL2/*.tar.gz
-
-res/augustus.icns
+Augustus/korean/korean-noto-hd.bin

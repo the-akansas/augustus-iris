@@ -20,6 +20,7 @@
 #include "game/state.h"
 #include "graphics/button.h"
 #include "graphics/graphics.h"
+#include "graphics/renderer.h"
 #include "graphics/menu.h"
 #include "graphics/image.h"
 #include "graphics/panel.h"
@@ -93,7 +94,9 @@ void widget_city_draw(void)
 {
     update_zoom_level();
     set_city_clip_rectangle();
+    if (graphics_renderer()->begin_city_layer) graphics_renderer()->begin_city_layer();
     city_draw(0, 0, &data.current_tile, data.selected_building_id);
+    if (graphics_renderer()->end_city_layer) graphics_renderer()->end_city_layer();
     graphics_reset_clip_rectangle();
 }
 
@@ -101,7 +104,9 @@ void widget_city_draw_for_figure(int figure_id, pixel_coordinate *coord)
 {
     set_city_clip_rectangle();
 
+    if (graphics_renderer()->begin_city_layer) graphics_renderer()->begin_city_layer();
     city_draw(figure_id, coord, &data.current_tile, 0);
+    if (graphics_renderer()->end_city_layer) graphics_renderer()->end_city_layer();
 
     graphics_reset_clip_rectangle();
 }
@@ -668,9 +673,24 @@ static void handle_mouse(const mouse *m)
     }
 }
 
+/* Camera-only entry point. Never delegates to normal city/legion/construction input. */
+int widget_city_visit_input(const mouse *m,const hotkeys *h){
+ int inside=input_coords_in_city(m->x,m->y);
+ int dragging=scroll_handle_middle_mouse(m,inside);scroll_map(m);
+ if(inside){
+  zoom_map(m,h,city_view_get_scale());
+  update_city_view_coords(m->x,m->y,&data.current_tile);
+  if(!dragging && (m->left.went_up || m->right.went_up))return data.current_tile.grid_offset;
+ }
+ return 0;
+}
 void widget_city_handle_input(const mouse *m, const hotkeys *h)
 {
+    int middle_drag = scroll_handle_middle_mouse(m, input_coords_in_city(m->x, m->y));
     scroll_map(m);
+    if (middle_drag) {
+        return;
+    }
 
     if (m->is_touch) {
         handle_touch();
@@ -721,7 +741,11 @@ void widget_city_handle_input_military(const mouse *m, const hotkeys *h, int leg
     if (!city_view_is_sidebar_collapsed() && widget_minimap_handle_mouse(m)) {
         return;
     }
+    int middle_drag = scroll_handle_middle_mouse(m, input_coords_in_city(m->x, m->y));
     scroll_map(m);
+    if (middle_drag) {
+        return;
+    }
     if (m->is_touch) {
         const touch *t = touch_get_earliest();
         if (!t->in_use) {
@@ -765,6 +789,8 @@ int widget_city_current_grid_offset(void)
     return data.current_tile.grid_offset;
 }
 
+#include "multiplayer_affiliation.inc"
+
 void widget_city_get_tooltip(tooltip_context *c)
 {
     if (setting_tooltips() == TOOLTIPS_NONE) {
@@ -789,6 +815,10 @@ void widget_city_get_tooltip(tooltip_context *c)
     if (overlay == OVERLAY_NONE && building_id && building_get(building_id)->type == BUILDING_SENATE) {
         c->type = TOOLTIP_SENATE;
         c->high_priority = 1;
+        return;
+    }
+    // multiplayer: trade post partner / soldier owner (no-op outside a multiplayer city)
+    if (overlay == OVERLAY_NONE && mp_affiliation_tooltip(c, grid_offset, building_id)) {
         return;
     }
     // overlay tooltips

@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "id": "capua-tarentum",
+  "title": "카푸아·타렌툼 자유 건설",
+  "revision": 1,
+  "rules": {
+    "mode": "free-build",
+    "player_transport": "land"
+  },
+  "slots": [
+    {
+      "id": "capua",
+      "name_id": 2,
+      "campaign_scenario": 2
+    },
+    {
+      "id": "tarentum",
+      "name_id": 1,
+      "campaign_scenario": 3
+    }
+  ],
+  "empire": {
+    "template": 25,
+    "cities": [
+      {
+        "name_id": 2,
+        "role": "player",
+        "sea": 0,
+        "cost": 0,
+        "sells": {},
+        "buys": {}
+      },
+      {
+        "name_id": 1,
+        "role": "player",
+        "sea": 0,
+        "cost": 0,
+        "sells": {},
+        "buys": {}
+      },
+      {
+        "name_id": 3,
+        "role": "npc",
+        "sea": 0,
+        "cost": 400,
+        "sells": {
+          "1": 25,
+          "6": 25
+        },
+        "buys": {
+          "15": 25,
+          "16": 25
+        }
+      },
+      {
+        "name_id": 10,
+        "role": "npc",
+        "sea": 1,
+        "cost": 600,
+        "sells": {
+          "3": 25,
+          "11": 25,
+          "8": 25
+        },
+        "buys": {
+          "7": 25,
+          "16": 25,
+          "17": 25
+        }
+      },
+      {
+        "name_id": 4,
+        "role": "npc",
+        "sea": 0,
+        "cost": 500,
+        "sells": {
+          "10": 25,
+          "7": 25
+        },
+        "buys": {
+          "15": 25,
+          "18": 25,
+          "19": 25
+        }
+      },
+      {
+        "name_id": 6,
+        "role": "npc",
+        "sea": 1,
+        "cost": 700,
+        "sells": {
+          "4": 25,
+          "2": 25,
+          "17": 25
+        },
+        "buys": {
+          "16": 25,
+          "18": 25
+        }
+      },
+      {
+        "name_id": 13,
+        "role": "npc",
+        "sea": 1,
+        "cost": 800,
+        "sells": {
+          "11": 25,
+          "8": 25
+        },
+        "buys": {
+          "15": 25,
+          "19": 25,
+          "7": 25
+        }
+      }
+    ]
+  }
+}

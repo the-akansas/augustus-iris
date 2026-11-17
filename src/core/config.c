@@ -5,6 +5,7 @@
 #include "core/log.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MAX_LINE 100
@@ -25,6 +26,8 @@ static const char *ini_keys[] = {
     [CONFIG_GP_FIX_100_YEAR_GHOSTS] = "gameplay_fix_100y_ghosts",
     [CONFIG_SCREEN_DISPLAY_SCALE] = "screen_display_scale",
     [CONFIG_SCREEN_CURSOR_SCALE] = "screen_cursor_scale",
+    [CONFIG_KOREAN_FONT] = "korean_font",
+    [CONFIG_MP_LANGUAGE] = "mp_language",
     [CONFIG_SCREEN_COLOR_CURSORS] = "screen_color_cursors",
     [CONFIG_UI_SIDEBAR_INFO] = "ui_sidebar_info",
     [CONFIG_UI_SHOW_INTRO_VIDEO] = "ui_show_intro_video",
@@ -158,6 +161,7 @@ static int values[CONFIG_MAX_ENTRIES];
 static char string_values[CONFIG_STRING_MAX_ENTRIES][CONFIG_STRING_VALUE_MAX];
 
 static int default_values[CONFIG_MAX_ENTRIES] = {
+    [CONFIG_KOREAN_FONT] = 5,
     [CONFIG_GENERAL_ENABLE_AUDIO] = 1,
     [CONFIG_GENERAL_MASTER_VOLUME] = 100,
     [CONFIG_GENERAL_ENABLE_MUSIC_RANDOMISE] = 0,
@@ -231,13 +235,16 @@ static int default_values[CONFIG_MAX_ENTRIES] = {
 
 static const char default_string_values[CONFIG_STRING_MAX_ENTRIES][CONFIG_STRING_VALUE_MAX] = { 0 };
 
+#include "room_options.inc"
+
 int config_get(config_key key)
 {
-    return values[key];
+    return room_options_active && room_config_mask[key]?room_config_values[key]:values[key];
 }
 
 void config_set(config_key key, int value)
 {
+    if(room_options_active && room_config_mask[key])return;
     values[key] = value;
 }
 
@@ -276,6 +283,13 @@ static void set_defaults(void)
 
 void config_load(void)
 {
+    const char *options_file=getenv("AUGUSTUS_ROOM_OPTIONS_FILE");
+    if(options_file && *options_file){FILE *f=fopen(options_file,"rb");int v[CONFIG_ROOM_OPTION_COUNT],ok=f!=0;char extra;
+        for(int i=0;ok && i<CONFIG_ROOM_OPTION_COUNT;i++)if(fscanf(f,"%d",&v[i])!=1)ok=0;
+        if(ok && fscanf(f," %c",&extra)==1)ok=0;
+        if(f)fclose(f);if(!ok || !config_room_apply(v)){fprintf(stderr,"ERROR: Invalid room options worker payload\n");exit(119);}
+    }
+
     set_defaults();
     needs_user_directory_setup = 1;
     const char *file_name = dir_get_file_at_location(INI_FILENAME, PATH_LOCATION_CONFIG);

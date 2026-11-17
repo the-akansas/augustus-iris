@@ -9,9 +9,10 @@
 #define IMAGE_MAX_GROUPS 300
 
 #define IMAGE_FONT_MULTIBYTE_OFFSET 10000
+#define IMAGE_FONT_KOREAN_ASCII_OFFSET (IMAGE_FONT_MULTIBYTE_OFFSET + IMAGE_FONT_MULTIBYTE_KOREAN_MAX_CHARS * 3)
 #define IMAGE_FONT_MULTIBYTE_TRAD_CHINESE_MAX_CHARS 2585
 #define IMAGE_FONT_MULTIBYTE_SIMP_CHINESE_MAX_CHARS 2250
-#define IMAGE_FONT_MULTIBYTE_KOREAN_MAX_CHARS 2350
+#define IMAGE_FONT_MULTIBYTE_KOREAN_MAX_CHARS 11266
 #define IMAGE_FONT_MULTIBYTE_JAPANESE_MAX_CHARS 3321
 
 #define IMAGE_FONT_CUSTOM_OFFSET 14000 //new letters and symbols added via assets
@@ -50,6 +51,8 @@ typedef struct {
  * Image metadata
  */
 typedef struct image {
+    /* Optional 4x font ink; logical layout and the original atlas remain unchanged. */
+    struct { int id, x, y, width, height, dx, dy, offset; } hd;
     int x_offset;
     int y_offset;
     int width;
@@ -109,6 +112,13 @@ int image_load_climate(int climate_id, int is_editor, int force_reload, int keep
  * @return boolean true on success, false on failure
  */
 int image_load_fonts(encoding_type encoding);
+
+/* Replaces the Korean atlas only on success; never changes saved configuration. */
+int image_preview_korean_font(int selection);
+int image_get_korean_font(void);
+int image_has_korean_ascii(void);
+/* The multilingual letters (Cyrillic, Latin-1 ...) are loaded with the Korean font. */
+int image_has_korean_extra(void);
 
 /**
  * Loads the image collection for the specified enemy

@@ -1,7 +1,12 @@
+#include "multiplayer/visit.h"
+#include "window/multiplayer_lobby.h"
 #include "window.h"
+#include "window/multiplayer_victory.h"
+#include "window/multiplayer_chat.h"
 
 #include "game/system.h"
 #include "graphics/graphics.h"
+#include "core/image.h"
 #include "graphics/warning.h"
 #include "input/cursor.h"
 #include "input/hotkey.h"
@@ -50,6 +55,7 @@ static void reset_input(void)
 {
     mouse_reset_button_state();
     reset_touches(1);
+    mouse_cancel_middle_click();
     scroll_stop();
 }
 
@@ -81,6 +87,7 @@ window_id window_get_id(void)
 
 void window_show(const window_type *window)
 {
+    window_city_visit_ui_hide();
     reset_input();
     increase_queue_index();
     data.window_queue[data.queue_index] = *window;
@@ -117,7 +124,7 @@ static void update_input_before(void)
     if (!handled) {
         mouse_determine_button_state();  // touch and joystick override mouse
     }
-    hotkey_handle_global_keys();
+    if (!mp_visit_active() && !window_city_visit_ui_active()) hotkey_handle_global_keys();
 }
 
 static void update_input_after(void)
@@ -130,15 +137,31 @@ static void update_input_after(void)
 
 void window_draw(int force)
 {
+    window_multiplayer_room_poll();
+    window_multiplayer_victory_poll();
     update_input_before();
     window_type *w = data.current_window;
-    if (force || data.refresh_on_draw) {
+    /* Alpha glyphs and translucent buttons cannot be composited repeatedly onto
+       the preceding foreground. Rebuild static UI frames, including all dialog
+       controls, regardless of whether pointer input invalidated the window.
+       Live world/video views already own their full-frame rendering. */
+    int rebuild_ui = image_has_korean_ascii() &&
+        w->id != WINDOW_CITY && w->id != WINDOW_CITY_MILITARY &&
+        w->id != WINDOW_EDITOR_MAP && w->id != WINDOW_VIDEO &&
+        w->id != WINDOW_INTRO_VIDEO;
+    if (force || data.refresh_on_draw || rebuild_ui) {
         data.refresh_on_draw = 0;
         data.refresh_immediate = 0;
         graphics_clear_screen();
         w->draw_background();
     }
+    /* City status belongs below the open File/Options dropdown. Other modal
+       windows own their foreground and must not be covered by this overlay. */
+    if (w->id == WINDOW_TOP_MENU) window_multiplayer_overlay_draw();
     w->draw_foreground();
+    if (w->id == WINDOW_CITY || w->id == WINDOW_CITY_MILITARY) {
+        window_multiplayer_overlay_draw();
+    }
 
     const mouse *m = mouse_get();
     const hotkeys *h = hotkey_state();

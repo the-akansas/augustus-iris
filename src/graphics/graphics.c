@@ -28,13 +28,45 @@ void graphics_reset_dialog(void)
     graphics_renderer()->reset_viewport();
 }
 
+/* An optional outer clip (a scrolling panel): inner clips are intersected with it and a reset
+ * returns to it, so widgets that clip themselves (labels, panels) cannot draw outside. */
+static struct { int active, x, y, width, height; } outer_clip;
+
 void graphics_set_clip_rectangle(int x, int y, int width, int height)
 {
+    if (outer_clip.active) {
+        int x2 = x + width, y2 = y + height;
+        int ox2 = outer_clip.x + outer_clip.width, oy2 = outer_clip.y + outer_clip.height;
+        if (x < outer_clip.x) x = outer_clip.x;
+        if (y < outer_clip.y) y = outer_clip.y;
+        if (x2 > ox2) x2 = ox2;
+        if (y2 > oy2) y2 = oy2;
+        width = x2 > x ? x2 - x : 0;
+        height = y2 > y ? y2 - y : 0;
+        if (!width || !height) { x = -10; y = -10; width = 1; height = 1; } /* nothing visible */
+    }
     graphics_renderer()->set_clip_rectangle(x, y, width, height);
 }
 
 void graphics_reset_clip_rectangle(void)
 {
+    if (outer_clip.active) {
+        graphics_renderer()->set_clip_rectangle(outer_clip.x, outer_clip.y, outer_clip.width, outer_clip.height);
+    } else {
+        graphics_renderer()->reset_clip_rectangle();
+    }
+}
+
+void graphics_push_outer_clip(int x, int y, int width, int height)
+{
+    outer_clip.active = 0;
+    graphics_set_clip_rectangle(x, y, width, height);
+    outer_clip.x = x; outer_clip.y = y; outer_clip.width = width; outer_clip.height = height; outer_clip.active = 1;
+}
+
+void graphics_pop_outer_clip(void)
+{
+    outer_clip.active = 0;
     graphics_renderer()->reset_clip_rectangle();
 }
 

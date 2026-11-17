@@ -1,4 +1,6 @@
 #include "hotkey.h"
+#include "multiplayer/chat.h"
+#include "multiplayer/clock.h"
 
 #include "building/type.h"
 #include "city/constants.h"
@@ -661,6 +663,7 @@ void hotkey_reset_state(void)
 void hotkey_key_pressed(key_type key, key_modifier_type modifiers, int repeat)
 {
     data.modifiers = modifiers;
+    if(mp_clock_active() && key==KEY_TYPE_F11 && modifiers==(KEY_MOD_CTRL|KEY_MOD_SHIFT)){if(!repeat)mp_debug_toggle();return;}
 
     if (window_is(WINDOW_HOTKEY_EDITOR)) {
         window_hotkey_editor_key_pressed(key, modifiers);

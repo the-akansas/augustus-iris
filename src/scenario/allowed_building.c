@@ -65,7 +65,34 @@ static uint8_t allowed_buildings[BUILDING_TYPE_MAX];
 
 int scenario_allowed_building(building_type type)
 {
-    return allowed_buildings[type];
+    /* "No building required" is always allowed. Multiplayer scenarios list only real buildings, so entry 0 was
+     * left off and the grand temple epithet button showed no choices: nothing happened (2026-11-14). */
+    if (type == BUILDING_NONE) {
+        return 1;
+    }
+    if (allowed_buildings[type]) {
+        return 1;
+    }
+    /* Multiplayer scenarios start from "nothing allowed" and switch on only the buildings the author picked, so
+     * helper ids that are never picked stayed off (2026-11-14):
+     * - the fort ground stands for "any fort" (Mars and Mercury grand temple epithet 1 vanished with forts allowed);
+     * - a build menu group stands for its buildings (Venus grand temple wine was not counted as local wine). */
+    if (type == BUILDING_FORT_GROUND) {
+        return allowed_buildings[BUILDING_FORT_LEGIONARIES] || allowed_buildings[BUILDING_FORT_JAVELIN] ||
+            allowed_buildings[BUILDING_FORT_MOUNTED] || allowed_buildings[BUILDING_FORT_AUXILIA_INFANTRY] ||
+            allowed_buildings[BUILDING_FORT_ARCHERS];
+    }
+    int submenu = building_menu_get_submenu_for_type(type);
+    if (submenu) {
+        int all_items = building_menu_count_all_items(submenu);
+        for (int i = 0; i < all_items; i++) {
+            building_type item = building_menu_type(submenu, i);
+            if (item != type && item != BUILDING_NONE && allowed_buildings[item]) {
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 
 static int enable_submenu_buildings(building_type type, int allowed)

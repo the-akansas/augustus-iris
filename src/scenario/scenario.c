@@ -238,7 +238,7 @@ int scenario_get_state_buffer_size_by_scenario_version(int scenario_version)
 void scenario_save_state(buffer *buf)
 {
     int buf_size = scenario_get_state_buffer_size_by_scenario_version(SCENARIO_CURRENT_VERSION);
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(buf_size, 1);
     buffer_init(buf, buf_data, buf_size);
 
     // size
@@ -755,7 +755,7 @@ void scenario_settings_save_state(buffer *part1, buffer *part2, buffer *part3,
 
     int campaign_name_length = (int) strlen(game_campaign_get_name()) + 1;
     int buf_size = (int) sizeof(int32_t) + campaign_name_length;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(buf_size, 1);
 
     buffer_init(campaign_name, buf_data, buf_size);
     buffer_write_i32(campaign_name, campaign_name_length);
@@ -788,3 +788,4 @@ void scenario_settings_load_state(
         }
     }
 }
+

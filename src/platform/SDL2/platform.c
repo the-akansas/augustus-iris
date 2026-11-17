@@ -7,6 +7,33 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+static int make_local_directory(const char *utf8_path)
+{
+    wchar_t wide[2048];
+    if (!MultiByteToWideChar(CP_UTF8, 0, utf8_path, -1, wide, 2048)) {
+        return 0;
+    }
+    if (CreateDirectoryW(wide, 0)) {
+        return 1;
+    }
+    DWORD attributes = GetFileAttributesW(wide);
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+#else
+#include <sys/stat.h>
+static int make_local_directory(const char *utf8_path)
+{
+    struct stat info;
+    if (mkdir(utf8_path, 0755) == 0) {
+        return 1;
+    }
+    return stat(utf8_path, &info) == 0 && S_ISDIR(info.st_mode);
+}
+#endif
 
 static SDL_version version;
 
@@ -124,10 +151,37 @@ const char *platform_get_logging_path(void)
 
 const char *platform_get_pref_path(void)
 {
+    // Portable Korean launcher: UTF-8 absolute directory with trailing slash.
+    // No gameplay changes; unset keeps the upstream preference location.
+    // getenv, not SDL_getenv: the game's own getenv (platform/env_utf8.c) returns UTF-8 on Windows, SDL's returns
+    // the ANSI code page and broke a profile under a folder with non-English letters.
+    const char *portable_path = getenv("AUGUSTUS_KO_USER_PATH");
+    if (portable_path && *portable_path) {
+        return portable_path;
+    }
 #if SDL_VERSION_ATLEAST(2, 0, 1)
+    // Envelope rule (user 2026-11-14): nothing is written outside the unpacked folder. Started without the
+    // launcher, the game keeps its files in user-profile next to the executable, the folder the launcher names.
+    // The system preference folder (AppData) is used only when that folder cannot be made.
+    static char local_path[2048];
     static const char *pref_path;
     if (!pref_path && platform_sdl_version_at_least(2, 0, 1)) {
-        pref_path = SDL_GetPrefPath("augustus", "augustus");
+        char *base = SDL_GetBasePath();
+        if (base && *base && strlen(base) + sizeof("user-profile/") < sizeof(local_path)) {
+            snprintf(local_path, sizeof(local_path), "%suser-profile", base);
+            if (make_local_directory(local_path)) {
+                size_t length = strlen(local_path);
+                local_path[length] = '/';
+                local_path[length + 1] = 0;
+                pref_path = local_path;
+            }
+        }
+        if (base) {
+            SDL_free(base);
+        }
+        if (!pref_path) {
+            pref_path = SDL_GetPrefPath("augustus", "augustus");
+        }
     }
     return pref_path;
 #endif

@@ -1,9 +1,11 @@
+#include "core/encoding_korean.h"
 #include "font.h"
 
 #include "assets/assets.h"
 #include "core/encoding_japanese.h"
 #include "core/encoding_trad_chinese.h"
 #include "core/image.h"
+#include "graphics/korean_extra_chars.h"
 
 static int image_y_offset_none(uint8_t c, int image_height, int line_height);
 static int image_y_offset_default(uint8_t c, int image_height, int line_height);
@@ -544,6 +546,19 @@ const font_definition *font_definition_for(font_t font)
     return &data.font_definitions[font];
 }
 
+int font_letter_y_offset(const font_definition *def, uint8_t character, int letter_id)
+{
+    const image *img = image_letter(letter_id);
+    if (data.multibyte == MULTIBYTE_KOREAN && letter_id >= IMAGE_FONT_KOREAN_ASCII_OFFSET &&
+        ((character >= 33 && character <= 126) || character >= 0x80)) {
+        /* All vector families share a baseline between Hangul and ASCII. */
+        return def->image_y_offset(0xb0, img->original.height, def->line_height);
+    }
+    int height = data.multibyte == MULTIBYTE_KOREAN && character >= 0x80 ?
+        img->original.height : img->height + img->y_offset;
+    return def->image_y_offset(character, height, def->line_height);
+}
+
 int font_can_display(const uint8_t *character)
 {
     int dummy;
@@ -568,8 +583,22 @@ static int font_character_beyond_mapping(const uint8_t *str)
     }
 }
 
+int font_native_ascii_id(font_t font, int character)
+{
+    return CHAR_TO_FONT_IMAGE_DEFAULT[character] + DEFINITIONS_KOREAN[font].image_offset - 1;
+}
+
+int font_native_digit_id(font_t font, int digit)
+{
+    return CHAR_TO_FONT_IMAGE_DEFAULT['0' + digit] + DEFINITIONS_KOREAN[font].image_offset - 1;
+}
+
 int font_letter_id(const font_definition *def, const uint8_t *str, int *num_bytes)
 {
+    if (data.multibyte == MULTIBYTE_KOREAN && image_has_korean_ascii() && *str >= 33 && *str <= 126) {
+        *num_bytes = 1;
+        return IMAGE_FONT_KOREAN_ASCII_OFFSET + def->font * 94 + *str - 33;
+    }
     int custom_char_id = font_character_beyond_mapping(str);
     if (custom_char_id > 0) { //instead of changing the basic mapping, intercept characters here
         *num_bytes = 1;
@@ -595,11 +624,11 @@ int font_letter_id(const font_definition *def, const uint8_t *str, int *num_byte
             }
             return IMAGE_FONT_MULTIBYTE_OFFSET + def->multibyte_image_offset + char_id;
         } else if (data.multibyte == MULTIBYTE_KOREAN) {
-            int b0 = str[0] - 0xb0;
-            int b1 = str[1] - 0xa1;
-            int char_id = b0 * 94 + b1;
-            if (b0 < 0 || b1 < 0 || char_id < 0 || char_id >= IMAGE_FONT_MULTIBYTE_KOREAN_MAX_CHARS) {
-                return -1;
+            int char_id = encoding_korean_image_id((str[0] << 8) | str[1]);
+            if (char_id < 0) {
+                int extra = encoding_korean_extra_index((uint16_t) ((str[0] << 8) | str[1]));
+                if (extra < 0 || !image_has_korean_extra()) return -1;
+                return IMAGE_FONT_KOREAN_ASCII_OFFSET + 940 + def->font * KOREAN_EXTRA_SLOTS + extra;
             }
             return IMAGE_FONT_MULTIBYTE_OFFSET + def->multibyte_image_offset + char_id;
         } else if (data.multibyte == MULTIBYTE_JAPANESE) {

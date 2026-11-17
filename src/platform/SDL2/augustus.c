@@ -1,3 +1,7 @@
+#include "window/multiplayer_lobby.h"
+#include "window/city.h"
+#include "multiplayer/visit.h"
+#include "multiplayer/clock.h"
 #include "SDL.h"
 
 #include "core/config.h"
@@ -7,11 +11,15 @@
 #include "core/log.h"
 #include "core/time.h"
 #include "game/game.h"
+#include "game/file_editor.h"
+#include "editor/editor.h"
+#include "window/editor/map.h"
 #include "game/settings.h"
 #include "game/system.h"
 #include "graphics/screen.h"
 #include "graphics/window.h"
 #include "input/mouse.h"
+#include "input/scroll.h"
 #include "input/touch.h"
 #include "platform/file_manager.h"
 #include "platform/android/android.h"
@@ -208,6 +216,7 @@ static void handle_window_event(SDL_WindowEvent *event, int *window_active)
             mouse_set_inside_window(0);
             break;
         case SDL_WINDOWEVENT_FOCUS_LOST:
+            scroll_stop();
             mouse_set_window_focus(0);
             break;
         case SDL_WINDOWEVENT_FOCUS_GAINED:
@@ -427,6 +436,11 @@ static void main_loop(void)
     }
     if (data.active) {
         run_and_draw();
+    } else if(mp_clock_active() || getenv("AUGUSTUS_MP_BRIDGE")) {
+        time_set_millis(system_get_ticks());
+        window_multiplayer_room_poll();
+        if(mp_clock_active()) game_run();
+        SDL_Delay(10);
     } else {
         SDL_WaitEvent(NULL);
     }
@@ -690,6 +704,20 @@ static void setup(const augustus_args *args)
         exit_with_status(2);
     }
 
+    if (mp_visit_active()) {
+        if (!window_city_visit_load()) {
+            SDL_Log("City visit snapshot could not be loaded");exit_with_status(3);
+        }
+        system_change_window_title("Augustus - City visit (read only)");
+    } else if (args->editor_map) {
+        if (!editor_is_present() || !game_init_editor() ||
+            !game_file_editor_load_scenario(args->editor_map)) {
+            SDL_Log("Exiting: native editor could not load the requested map");
+            exit_with_status(3);
+        }
+        window_editor_map_show();
+    }
+
     data.quit = 0;
     data.active = 1;
 }
@@ -708,6 +736,10 @@ int main(int argc, char **argv)
 
 
 
+    if (mp_visit_active()) {
+        while (window_city_visit_worker_step()) SDL_Delay(10);
+        return 0;
+    }
     mouse_set_inside_window(1);
     mouse_set_window_focus(1);
     run_and_draw();

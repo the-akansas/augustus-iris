@@ -11,7 +11,7 @@
 typedef struct {
     const char *filename;
     int retrieved;
-    char location[FILE_NAME_MAX];
+    char location[FILE_PATH_MAX];
 } directory;
 
 static struct {
@@ -48,7 +48,7 @@ static const char *retrieve_directory(directory *dir)
     }
     FILE *fp = open_pref_file(dir->filename, "r");
     if (fp) {
-        size_t length = fread(dir->location, 1, FILE_NAME_MAX - 1, fp);
+        size_t length = fread(dir->location, 1, FILE_PATH_MAX - 1, fp);
         fclose(fp);
         if (length > 0) {
             dir->location[length] = 0;
@@ -60,7 +60,7 @@ static const char *retrieve_directory(directory *dir)
 
 static void save_directory(directory *dir, const char *location)
 {
-    snprintf(dir->location, FILE_NAME_MAX, "%s", location);
+    snprintf(dir->location, FILE_PATH_MAX, "%s", location);
     FILE *fp = open_pref_file(dir->filename, "w");
     if (fp) {
         fwrite(location, 1, strlen(location), fp);

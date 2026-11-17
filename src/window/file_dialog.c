@@ -81,7 +81,7 @@ static generic_button sort_by_button[] = {
 typedef struct {
     const char *extension;
     int location;
-    char last_loaded_file[FILE_NAME_MAX];
+    char last_loaded_file[FILE_PATH_MAX];
 } file_type_data;
 
 static struct {
@@ -98,8 +98,8 @@ static struct {
     unsigned int sort_by_button_focused;
 
     file_type_data *file_data;
-    char selected_file[FILE_NAME_MAX];
-    uint8_t typed_name[FILE_NAME_MAX];
+    char selected_file[FILE_PATH_MAX];
+    uint8_t typed_name[FILE_PATH_MAX];
     saved_game_info info;
     savegame_load_status savegame_info_status;
     int redraw_full_window;
@@ -245,27 +245,27 @@ static void init(file_type type, file_dialog_type dialog_type)
         if (local_time) {
             strftime(timestamp, sizeof(timestamp), " %d-%m-%y %H-%M", local_time);
             const uint8_t *name = scenario_name();
-            uint8_t *end = string_copy(name, data.typed_name, FILE_NAME_MAX - sizeof(timestamp));
+            uint8_t *end = string_copy(name, data.typed_name, FILE_PATH_MAX - sizeof(timestamp));
             string_copy(string_from_ascii(timestamp), end, sizeof(timestamp));
         } else { //fallback if system pull fails
-            snprintf(data.selected_file, FILE_NAME_MAX, "%s", data.file_data->last_loaded_file);
+            snprintf(data.selected_file, FILE_PATH_MAX, "%s", data.file_data->last_loaded_file);
         }
-        encoding_to_utf8(data.typed_name, data.selected_file, FILE_NAME_MAX, encoding_system_uses_decomposed());
-        file_append_extension(data.selected_file, data.file_data->extension, FILE_NAME_MAX);
+        encoding_to_utf8(data.typed_name, data.selected_file, FILE_PATH_MAX, encoding_system_uses_decomposed());
+        file_append_extension(data.selected_file, data.file_data->extension, FILE_PATH_MAX);
     } else if (strlen(data.file_data->last_loaded_file) > 0) {
-        snprintf(data.selected_file, FILE_NAME_MAX, "%s", data.file_data->last_loaded_file);
+        snprintf(data.selected_file, FILE_PATH_MAX, "%s", data.file_data->last_loaded_file);
         if (data.dialog_type == FILE_DIALOG_SAVE) {
             file_remove_extension(data.selected_file);
         }
-        encoding_from_utf8(data.selected_file, data.typed_name, FILE_NAME_MAX);
+        encoding_from_utf8(data.selected_file, data.typed_name, FILE_PATH_MAX);
         if (data.dialog_type == FILE_DIALOG_SAVE) {
-            file_append_extension(data.selected_file, data.file_data->extension, FILE_NAME_MAX);
+            file_append_extension(data.selected_file, data.file_data->extension, FILE_PATH_MAX);
         }
     } else if (dialog_type == FILE_DIALOG_SAVE) {
         // Suggest default filename
-        string_copy(lang_get_string(9, type == FILE_TYPE_SCENARIO ? 7 : 6), data.typed_name, FILE_NAME_MAX);
-        encoding_to_utf8(data.typed_name, data.selected_file, FILE_NAME_MAX, encoding_system_uses_decomposed());
-        file_append_extension(data.selected_file, data.file_data->extension, FILE_NAME_MAX);
+        string_copy(lang_get_string(9, type == FILE_TYPE_SCENARIO ? 7 : 6), data.typed_name, FILE_PATH_MAX);
+        encoding_to_utf8(data.typed_name, data.selected_file, FILE_PATH_MAX, encoding_system_uses_decomposed());
+        file_append_extension(data.selected_file, data.file_data->extension, FILE_PATH_MAX);
     } else {
         // Use empty string
         data.typed_name[0] = 0;
@@ -299,7 +299,7 @@ static void init(file_type type, file_dialog_type dialog_type)
     if (data.dialog_type == FILE_DIALOG_SAVE) {
         main_input.placeholder = 0;
         main_input.text = data.typed_name;
-        main_input.text_length = FILE_NAME_MAX;
+        main_input.text_length = FILE_PATH_MAX;
         main_input.width_blocks = 38;
         main_input.put_clear_button_outside_box = 0;
     } else {
@@ -315,13 +315,13 @@ static void init(file_type type, file_dialog_type dialog_type)
 
 static void draw_mission_info(int x_offset, int y_offset, int box_size)
 {
-    uint8_t text[FILE_NAME_MAX];
+    uint8_t text[FILE_PATH_MAX];
     uint8_t *cursor = text;
 
     if (data.info.origin.type == SAVEGAME_FROM_CUSTOM_SCENARIO) {
-        cursor = string_copy(translation_for(TR_SAVE_DIALOG_CUSTOM_SCENARIO), cursor, FILE_NAME_MAX);
-        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_NAME_MAX - (int) (cursor - text));
-        encoding_from_utf8(data.info.origin.scenario_name, cursor, FILE_NAME_MAX - (int) (cursor - text));
+        cursor = string_copy(translation_for(TR_SAVE_DIALOG_CUSTOM_SCENARIO), cursor, FILE_PATH_MAX);
+        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_PATH_MAX - (int) (cursor - text));
+        encoding_from_utf8(data.info.origin.scenario_name, cursor, FILE_PATH_MAX - (int) (cursor - text));
     } else if (data.info.origin.type == SAVEGAME_FROM_ORIGINAL_CAMPAIGN) {
         if (data.info.origin.mission == 0) {
             text_draw_centered(translation_for(TR_SAVE_DIALOG_FIRST_MISSION),
@@ -336,20 +336,20 @@ static void draw_mission_info(int x_offset, int y_offset, int box_size)
             } else {
                 mission_type = TR_SAVE_DIALOG_PEACEFUL;
             }
-            cursor = string_copy(translation_for(mission_type), cursor, FILE_NAME_MAX);
-            cursor = string_copy(string_from_ascii(" "), cursor, FILE_NAME_MAX - (int) (cursor - text));
+            cursor = string_copy(translation_for(mission_type), cursor, FILE_PATH_MAX);
+            cursor = string_copy(string_from_ascii(" "), cursor, FILE_PATH_MAX - (int) (cursor - text));
             cursor += string_from_int(cursor, (data.info.origin.mission + 4) / 2, 0);
-            cursor = string_copy(string_from_ascii(" - "), cursor, FILE_NAME_MAX - (int) (cursor - text));
+            cursor = string_copy(string_from_ascii(" - "), cursor, FILE_PATH_MAX - (int) (cursor - text));
             string_copy(lang_get_string(21, MISSION_ID_TO_CITY_ID[data.info.origin.mission]), cursor,
-                FILE_NAME_MAX - (int) (cursor - text));
+                FILE_PATH_MAX - (int) (cursor - text));
         }
     } else {
-        encoding_from_utf8(data.info.origin.campaign_name, cursor, FILE_NAME_MAX);
+        encoding_from_utf8(data.info.origin.campaign_name, cursor, FILE_PATH_MAX);
         cursor += string_length(text);
-        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_NAME_MAX - (int) (cursor - text));
+        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_PATH_MAX - (int) (cursor - text));
         cursor += string_from_int(cursor, data.info.origin.mission + 1, 0);
-        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_NAME_MAX - (int) (cursor - text));
-        encoding_from_utf8(data.info.origin.scenario_name, cursor, FILE_NAME_MAX - (int) (cursor - text));
+        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_PATH_MAX - (int) (cursor - text));
+        encoding_from_utf8(data.info.origin.scenario_name, cursor, FILE_PATH_MAX - (int) (cursor - text));
     }
 
     text_draw_ellipsized(text, x_offset, y_offset, box_size, FONT_NORMAL_BLACK, 0);
@@ -375,9 +375,9 @@ static void draw_background(void)
 
 static void draw_file(const list_box_item *item)
 {
-    uint8_t file[FILE_NAME_MAX];
+    uint8_t file[FILE_PATH_MAX];
     font_t font = item->is_selected ? FONT_NORMAL_WHITE : FONT_NORMAL_GREEN;
-    encoding_from_utf8(data.filtered_file_list.files[item->index].name, file, FILE_NAME_MAX);
+    encoding_from_utf8(data.filtered_file_list.files[item->index].name, file, FILE_PATH_MAX);
     text_ellipsize(file, font, item->width);
     text_draw(file, item->x, item->y + 2, font, 0);
     if (item->is_focused) {
@@ -593,11 +593,11 @@ static void input_box_changed(int is_addition_at_end)
 {
     int scroll_index = 0;
     if (data.dialog_type == FILE_DIALOG_SAVE) {
-        encoding_to_utf8(data.typed_name, data.selected_file, FILE_NAME_MAX, encoding_system_uses_decomposed());
+        encoding_to_utf8(data.typed_name, data.selected_file, FILE_PATH_MAX, encoding_system_uses_decomposed());
         if (data.file_list->num_files > NUM_FILES_IN_VIEW) {
             scroll_index = find_first_file_with_prefix(data.selected_file);
         }
-        file_append_extension(data.selected_file, data.file_data->extension, FILE_NAME_MAX);
+        file_append_extension(data.selected_file, data.file_data->extension, FILE_PATH_MAX);
         if (scroll_index >= 0 && data.filtered_file_list.num_files > scroll_index &&
             platform_file_manager_compare_filename(data.selected_file,
                 data.filtered_file_list.files[scroll_index].name) == 0) {
@@ -654,7 +654,7 @@ static void confirm_save_file(int accepted, int checked)
         empire_export_xml(filename);
         window_editor_empire_show();
     }
-    snprintf(data.file_data->last_loaded_file, FILE_NAME_MAX, "%s", data.selected_file);
+    snprintf(data.file_data->last_loaded_file, FILE_PATH_MAX, "%s", data.selected_file);
 }
 
 static void confirm_small_image(int accepted, int checked)
@@ -774,7 +774,7 @@ static void button_ok_cancel(int is_ok, int param2)
             }
         }
         input_box_stop(&main_input);
-        snprintf(data.file_data->last_loaded_file, FILE_NAME_MAX, "%s", data.selected_file);
+        snprintf(data.file_data->last_loaded_file, FILE_PATH_MAX, "%s", data.selected_file);
     } else if (data.dialog_type == FILE_DIALOG_SAVE) {
         if (config_get(CONFIG_UI_ASK_CONFIRMATION_ON_FILE_OVERWRITE) &&
             dir_get_file_at_location(data.selected_file, data.file_data->location)) {
@@ -792,7 +792,7 @@ static void button_ok_cancel(int is_ok, int param2)
             init_filtered_file_list();
             list_box_update_total_items(&list_box, data.filtered_file_list.num_files);
             select_correct_index();
-            snprintf(data.file_data->last_loaded_file, FILE_NAME_MAX, "%s", data.selected_file);
+            snprintf(data.file_data->last_loaded_file, FILE_PATH_MAX, "%s", data.selected_file);
             window_request_refresh();
         }
     }
@@ -844,14 +844,14 @@ static void select_file(unsigned int index, int is_double_click)
         return;
     }
     if (strcmp(data.selected_file, data.filtered_file_list.files[index].name) != 0) {
-        snprintf(data.selected_file, FILE_NAME_MAX, "%s", data.filtered_file_list.files[index].name);
+        snprintf(data.selected_file, FILE_PATH_MAX, "%s", data.filtered_file_list.files[index].name);
         if (data.dialog_type == FILE_DIALOG_SAVE) {
             file_remove_extension(data.selected_file);
         }
-        encoding_from_utf8(data.selected_file, data.typed_name, FILE_NAME_MAX);
+        encoding_from_utf8(data.selected_file, data.typed_name, FILE_PATH_MAX);
         if (data.dialog_type == FILE_DIALOG_SAVE) {
             input_box_refresh_text(&main_input);
-            file_append_extension(data.selected_file, data.file_data->extension, FILE_NAME_MAX);
+            file_append_extension(data.selected_file, data.file_data->extension, FILE_PATH_MAX);
         }
         window_request_refresh();
     }
@@ -863,9 +863,9 @@ static void select_file(unsigned int index, int is_double_click)
 
 static void file_tooltip(const list_box_item *item, tooltip_context *c)
 {
-    static uint8_t file[FILE_NAME_MAX];
+    static uint8_t file[FILE_PATH_MAX];
     font_t font = item->is_selected ? FONT_NORMAL_WHITE : FONT_NORMAL_GREEN;
-    encoding_from_utf8(data.filtered_file_list.files[item->index].name, file, FILE_NAME_MAX);
+    encoding_from_utf8(data.filtered_file_list.files[item->index].name, file, FILE_PATH_MAX);
     if (text_get_width(file, font) > item->width) {
         c->precomposed_text = file;
         c->type = TOOLTIP_BUTTON;

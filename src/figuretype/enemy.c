@@ -50,13 +50,17 @@ static void enemy_initial(figure *f, formation *m)
     }
     if (f->type == FIGURE_ENEMY43_SPEAR || f->type == FIGURE_ENEMY46_CAMEL ||
         f->type == FIGURE_ENEMY51_SPEAR || f->type == FIGURE_ENEMY52_MOUNTED_ARCHER ||
-        f->type == FIGURE_ENEMY_CATAPULT) {
+        f->type == FIGURE_ENEMY_CATAPULT || (m->mp_expedition_role == 2 &&
+        (f->type == FIGURE_FORT_JAVELIN || f->type == FIGURE_FORT_ARCHER || f->type == FIGURE_FORT_LEGIONARY))) {
         // missile throwers
         f->wait_ticks_missile++;
         map_point tile = { 0, 0 };
         if (f->wait_ticks_missile > figure_properties_for_type(f->type)->missile_delay) {
             f->wait_ticks_missile = 0;
-            if (figure_combat_get_missile_target_for_enemy(f, 10, city_figures_soldiers() < 4, &tile)) {
+            /* A visiting attack force throws only at soldiers. Throwing at citizens made the whole formation
+             * halt again and again (a halt follows every missile): in a busy street it stood still for good. */
+            if (figure_combat_get_missile_target_for_enemy(f, 10,
+                m->mp_expedition_role == 2 ? 0 : city_figures_soldiers() < 4, &tile)) {
                 f->attack_image_offset = 1;
                 f->direction = calc_missile_shooter_direction(f->x, f->y, tile.x, tile.y);
             } else {
@@ -79,6 +83,7 @@ static void enemy_initial(figure *f, formation *m)
                     missile_type = FIGURE_SPEAR;
                     break;
             }
+            if (m->mp_expedition_role == 2) missile_type = f->type == FIGURE_FORT_ARCHER ? FIGURE_ARROW : FIGURE_SPEAR;
             if (f->attack_image_offset == 1) {
                 if (tile.x == -1 || tile.y == -1) {
                     map_point_get_last_result(&tile);
@@ -190,7 +195,10 @@ static void enemy_action(figure *f, formation *m)
             if (f->direction == DIR_FIGURE_AT_DESTINATION ||
                 f->direction == DIR_FIGURE_REROUTE ||
                 f->direction == DIR_FIGURE_LOST) {
-                f->state = FIGURE_STATE_DEAD;
+                if (m->mp_expedition_role == 2) {
+                    f->action_state = FIGURE_ACTION_89_SOLDIER_AT_DISTANT_BATTLE;
+                    f->is_ghost = 1; /* Retreated survivor, recovered only by the owning expedition. */
+                } else f->state = FIGURE_STATE_DEAD;
             }
             break;
         case FIGURE_ACTION_151_ENEMY_INITIAL:
@@ -206,6 +214,12 @@ static void enemy_action(figure *f, formation *m)
             enemy_fighting(f, m);
             break;
     }
+}
+
+void figure_enemy_remote_action(figure *f)
+{
+    f->speed_multiplier = f->type == FIGURE_FORT_MOUNTED ? 3 : f->type == FIGURE_FORT_JAVELIN ? 2 : 1;
+    enemy_action(f, formation_get(f->formation_id));
 }
 
 static int get_direction(figure *f)

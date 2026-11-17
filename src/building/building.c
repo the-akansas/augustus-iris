@@ -1125,7 +1125,7 @@ void building_save_state(buffer *buf, buffer *highest_id, buffer *highest_id_eve
     buffer *sequence, buffer *corrupt_houses)
 {
     int buf_size = sizeof(int32_t) + data.buildings.size * BUILDING_STATE_CURRENT_BUFFER_SIZE;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(1, buf_size);
     buffer_init(buf, buf_data, buf_size);
     buffer_write_i32(buf, BUILDING_STATE_CURRENT_BUFFER_SIZE);
     building *b;

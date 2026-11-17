@@ -1,3 +1,6 @@
+#include "multiplayer/chat.h"
+#include "multiplayer/clock.h"
+#include "window/multiplayer_lobby.h"
 #include "city.h"
 
 #include "building/clone.h"
@@ -180,6 +183,21 @@ static void draw_paused_banner(void)
     }
 }
 
+/* Multiplayer (user 2026-11-17): the bottom of the labels at the top left of the city view (time left, FPS, the
+ * scenario's custom variables), 0 without any; the side tabs and the room notes go below them, never over them. */
+int window_city_topleft_labels_bottom(void)
+{
+    int rows = time_left_label_shown ? 1 : 0;
+    if (config_get(CONFIG_UI_SHOW_CUSTOM_VARIABLES)) {
+        for (unsigned int i = 0; i < scenario_custom_variable_count(); i++) {
+            if (scenario_custom_variable_is_visible(i)) {
+                rows++;
+            }
+        }
+    }
+    return rows ? 25 + rows * TOPLEFT_MESSAGES_Y_SPACING : 0;
+}
+
 void window_city_draw_custom_variables_text_display(void)
 {
     if (!config_get(CONFIG_UI_SHOW_CUSTOM_VARIABLES)) {
@@ -307,6 +325,7 @@ static void draw_foreground(void)
     if (window_is(WINDOW_CITY)) {
         city_message_process_queue();
     }
+    window_multiplayer_chat_draw();
 }
 
 static void draw_foreground_military(void)
@@ -323,6 +342,7 @@ static void draw_foreground_military(void)
     if (!mouse_get()->is_touch || sidebar_extra_is_information_displayed(SIDEBAR_EXTRA_DISPLAY_GAME_SPEED)) {
         draw_paused_banner();
     }
+    window_multiplayer_chat_draw();
 }
 
 static void exit_military_command(void)
@@ -730,7 +750,10 @@ static void toggle_pause(void)
 
 static void set_construction_building_type(building_type type, int rotation)
 {
-    if (scenario_allowed_building(type) && building_menu_is_enabled(type)) {
+    /* Clear/repair are tools, not entries in the creator's building checklist.
+     * Match the sidebar's enabled tool state without unlocking real buildings. */
+    int is_land_tool = type == BUILDING_CLEAR_LAND || type == BUILDING_REPAIR_LAND;
+    if ((is_land_tool || scenario_allowed_building(type)) && building_menu_is_enabled(type)) {
         building_construction_cancel();
         building_construction_set_type(type, rotation);
         window_request_refresh();
@@ -795,6 +818,8 @@ static void handle_hotkeys(const hotkeys *h)
     if (h->set_bookmark) {
         map_bookmark_save(h->set_bookmark - 1);
     }
+    if (mp_clock_active() && (h->save_file || h->quicksave)) {mp_client_command("save", "");return;}
+    if (mp_clock_active() && (h->load_file || h->quickload)) return;
     if (h->load_file) {
         window_file_dialog_show(FILE_TYPE_SAVED_GAME, FILE_DIALOG_LOAD);
     }
@@ -901,6 +926,7 @@ static void handle_hotkeys(const hotkeys *h)
 
 static void handle_input(const mouse *m, const hotkeys *h)
 {
+    if (window_multiplayer_chat_input(m,h)) return;
     handle_hotkeys(h);
     if (!building_construction_in_progress()) {
         if (widget_top_menu_handle_input(m, h)) {
@@ -915,6 +941,7 @@ static void handle_input(const mouse *m, const hotkeys *h)
 
 static void handle_input_military(const mouse *m, const hotkeys *h)
 {
+    if (window_multiplayer_chat_input(m,h)) return;
     handle_hotkeys(h);
     if (widget_top_menu_handle_input(m, h)) {
         return;
@@ -924,6 +951,8 @@ static void handle_input_military(const mouse *m, const hotkeys *h)
     }
     widget_city_handle_input_military(m, h, formation_get_selected());
 }
+
+int (*window_multiplayer_overlay_hook)(int x, int y);   /* see window/multiplayer_lobby.h */
 
 static void get_tooltip(tooltip_context *c)
 {
@@ -938,6 +967,12 @@ static void get_tooltip(tooltip_context *c)
     if (text_id || c->translation_key) {
         c->type = TOOLTIP_BUTTON;
         c->text_id = text_id;
+        return;
+    }
+    /* Nothing of the city under the throne box, card, dialog or scoreboard: a walker's tooltip covered the amount
+     * of the coup dialog (user 2026-11-14). */
+    const mouse *m = mouse_get();
+    if (window_multiplayer_overlay_hook && window_multiplayer_overlay_hook(m->x, m->y)) {
         return;
     }
     widget_city_get_tooltip(c);
@@ -1029,3 +1064,5 @@ void window_city_return(void)
         window_city_show();
     }
 }
+
+#include "city_visit.inc"

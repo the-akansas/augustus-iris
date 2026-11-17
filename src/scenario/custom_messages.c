@@ -101,6 +101,7 @@ custom_message_t *custom_messages_create(const uint8_t *uid_text)
     }
 
     custom_message_t *entry = custom_messages_create_blank();
+    if (!entry) return 0;
     entry->linked_uid = message_media_text_blob_add(uid_text);
 
     return entry;

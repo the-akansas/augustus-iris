@@ -41,6 +41,7 @@ void formation_legion_delete_for_fort(building *fort)
             for (int i = 0; i < m->num_figures; ++i) {
                 figure_get(m->figures[i])->state = FIGURE_STATE_DEAD;
             }
+            if (m->mp_expedition_id) m->building_id = 0; /* destroyed home: never bind a reused building ID */
             formation_clear(fort->formation_id);
             formation_calculate_legion_totals();
         }
@@ -51,7 +52,7 @@ int formation_legion_recruits_needed(void)
 {
     for (int i = 1; i < formation_count(); i++) {
         formation *m = formation_get(i);
-        if (m->in_use && m->is_legion && m->legion_recruit_type != LEGION_RECRUIT_NONE) {
+        if (m->in_use && m->is_legion && !m->mp_expedition_id && m->legion_recruit_type != LEGION_RECRUIT_NONE) {
             return 1;
         }
     }
@@ -62,7 +63,7 @@ void formation_legion_update_recruit_status(building *fort)
 {
     formation *m = formation_get(fort->formation_id);
     m->legion_recruit_type = LEGION_RECRUIT_NONE;
-    if (!m->is_at_fort || m->cursed_by_mars || m->num_figures == m->max_figures) {
+    if (m->mp_expedition_id || !m->is_at_fort || m->cursed_by_mars || m->num_figures == m->max_figures) {
         return;
     }
     if (m->num_figures < m->max_figures) {
@@ -193,7 +194,7 @@ void formation_legion_return_home_all(void)
 {
     for (int i = 1; i < formation_count(); i++) {
         formation *m = formation_get(i);
-        if (m->in_use && m->is_legion && !m->is_at_fort && !m->in_distant_battle) {
+        if (m->in_use && m->is_legion && !m->mp_expedition_id && !m->is_at_fort && !m->in_distant_battle) {
             formation_legion_return_home(m);
         }
     }
@@ -229,7 +230,7 @@ void formation_legions_dispatch_to_distant_battle(void)
     int roman_strength = 0;
     for (int i = 1; i < formation_count(); i++) {
         formation *m = formation_get(i);
-        if (m->in_use && m->is_legion && m->empire_service && m->num_figures > 0) {
+        if (m->in_use && m->is_legion && !m->mp_expedition_id && m->empire_service && m->num_figures > 0) {
             roman_strength += dispatch_soldiers(m);
             num_legions++;
         }
@@ -270,7 +271,7 @@ void formation_legions_kill_in_distant_battle(int kill_percentage)
 {
     for (int i = 1; i < formation_count(); i++) {
         formation *m = formation_get(i);
-        if (m->in_use && m->is_legion && m->in_distant_battle) {
+        if (m->in_use && m->is_legion && !m->mp_expedition_id && m->in_distant_battle) {
             kill_soldiers(m, kill_percentage);
         }
     }
@@ -294,7 +295,7 @@ void formation_legions_return_from_distant_battle(void)
 {
     for (int i = 1; i < formation_count(); i++) {
         formation *m = formation_get(i);
-        if (m->in_use && m->is_legion && m->in_distant_battle) {
+        if (m->in_use && m->is_legion && !m->mp_expedition_id && m->in_distant_battle) {
             return_soldiers(m);
         }
     }
@@ -306,7 +307,7 @@ int formation_legion_curse(void)
     int best_legion_weight = 0;
     for (int i = 1; i < formation_count(); i++) {
         formation *m = formation_get(i);
-        if (m->in_use == 1 && m->is_legion) {
+        if (m->in_use == 1 && m->is_legion && !m->mp_expedition_role) { /* another player's visiting legion is not this city's to curse */
             int weight = m->num_figures;
             if (m->figure_type == FIGURE_FORT_LEGIONARY) {
                 weight *= 2;
@@ -376,7 +377,7 @@ void formation_legion_update(void)
 {
     for (int i = 1; i < formation_count(); i++) {
         formation *m = formation_get(i);
-        if (m->in_use != 1 || !m->is_legion) {
+        if (m->in_use != 1 || !m->is_legion || m->mp_expedition_id) {
             continue;
         }
         formation_decrease_monthly_counters(m);

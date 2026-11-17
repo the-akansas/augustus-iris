@@ -89,7 +89,7 @@ static generic_button toggle_animation_button = {
 };
 
 static const lang_fragment draw_bounds_sequence[] = {
-    {.type = LANG_FRAG_TEXT, .text = (const uint8_t *) "Draw bounds" },
+    {.type = LANG_FRAG_LABEL, .text_group = CUSTOM_TRANSLATION, .text_id = TR_ASSET_DRAW_BOUNDS },
 };
 
 static checkbox_button draw_bounds_checkbox = {
@@ -439,12 +439,12 @@ static void draw_selected_asset_metrics(void)
     int x = data.x_offset_top + 16;
     int y = 136;
     int next_x = x;
-    next_x += text_draw(string_from_ascii("Size"), x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
+    next_x += text_draw(translation_for(TR_ASSET_SIZE_LABEL), x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += text_draw_number(display_width, '@', "", next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += text_draw(string_from_ascii("x"), next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += text_draw_number(display_height, '\0', "", next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += 15; //gap
-    next_x += text_draw(string_from_ascii("Original"), next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
+    next_x += text_draw(translation_for(TR_ASSET_ORIGINAL_LABEL), next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += text_draw_number(img->original.width, '@', "", next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += text_draw(string_from_ascii("x"), next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += text_draw_number(img->original.height, '\0', "", next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
@@ -452,7 +452,7 @@ static void draw_selected_asset_metrics(void)
     next_x += text_draw(string_from_ascii("ID"), next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += text_draw_number(image_id, '@', "", next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += 15; //gap
-    next_x += text_draw(string_from_ascii("Anim"), next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
+    next_x += text_draw(translation_for(TR_ASSET_ANIMATION_LABEL), next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
     next_x += text_draw_number(animation_sprites, '@', "", next_x, y, FONT_NORMAL_BLACK, COLOR_MASK_NONE);
 
     draw_bounds_checkbox.x = next_x + 15;

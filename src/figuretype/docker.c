@@ -1,4 +1,5 @@
 #include "docker.h"
+#include "multiplayer/transport.h"
 
 #include "building/building.h"
 #include "building/granary.h"
@@ -249,7 +250,7 @@ static int deliver_import_resource(figure *f, building *dock)
         return 0;
     }
     figure *ship = figure_get(ship_id);
-    if (ship->action_state != FIGURE_ACTION_112_TRADE_SHIP_MOORED || ship->loads_sold_or_carrying <= 0) {
+    if (ship->mp_contract_id || ship->action_state != FIGURE_ACTION_112_TRADE_SHIP_MOORED || ship->loads_sold_or_carrying <= 0) {
         return 0;
     }
     map_point tile;
@@ -282,7 +283,7 @@ static int fetch_export_resource(figure *f, building *dock, int add_to_bought)
         return 0;
     }
     figure *ship = figure_get(ship_id);
-    if (ship->action_state != FIGURE_ACTION_112_TRADE_SHIP_MOORED ||
+    if (ship->mp_contract_id || ship->action_state != FIGURE_ACTION_112_TRADE_SHIP_MOORED ||
         (add_to_bought && ship->trader_amount_bought >= figure_trade_sea_trade_units())) {
         return 0;
     }
@@ -344,7 +345,8 @@ void figure_docker_action(figure *f)
     }
     f->terrain_usage = TERRAIN_USAGE_ROADS_HIGHWAY;
     f->is_ghost = 0;
-    switch (f->action_state) {
+    if (f->mp_contract_id) f->cart_image_id = image_group(GROUP_FIGURE_CARTPUSHER_CART);
+    if (!mp_transport_docker_action(f)) switch (f->action_state) {
         case FIGURE_ACTION_150_ATTACK:
             figure_combat_handle_attack(f);
             break;

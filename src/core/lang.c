@@ -1,10 +1,12 @@
 #include "core/lang.h"
+#include "core/encoding.h"
 
 #include "building/building.h"
 #include "core/buffer.h"
 #include "core/file.h"
 #include "core/io.h"
 #include "core/log.h"
+#include "core/mp_language.h"
 #include "core/string.h"
 #include "editor/tool.h"
 #include "translation/translation.h"
@@ -13,18 +15,22 @@
 #include <string.h>
 
 #define MAX_TEXT_ENTRIES 1000
-#define MAX_TEXT_DATA 200000
+/* Multilingual: a player's own Russian/western texts converted to the Korean letter encoding take up to twice
+   the bytes (Augustus/c3_text_convert.py), so the limits are doubled. */
+#define MAX_TEXT_DATA 400000
 #define MIN_TEXT_SIZE (28 + MAX_TEXT_ENTRIES * 8)
 #define MAX_TEXT_SIZE (MIN_TEXT_SIZE + MAX_TEXT_DATA)
 
 #define MAX_MESSAGE_ENTRIES 400
-#define MAX_MESSAGE_DATA 460000
+#define MAX_MESSAGE_DATA 920000
 #define MIN_MESSAGE_SIZE 32024
 #define MAX_MESSAGE_SIZE (MIN_MESSAGE_SIZE + MAX_MESSAGE_DATA)
 
-#define BUFFER_SIZE 400000
+#define BUFFER_SIZE 1000000
 
 #define FILE_TEXT_ENG "c3.eng"
+#define FILE_TEXT_OWN "c3-own.eng"
+#define FILE_MM_OWN "c3_mm-own.eng"
 #define FILE_MM_ENG "c3_mm.eng"
 #define FILE_TEXT_RUS "c3.rus"
 #define FILE_MM_RUS "c3_mm.rus"
@@ -350,12 +356,26 @@ static int load_files(const char *text_filename, const char *message_filename, i
     return success;
 }
 
+static int own_files_loaded;
+
+int lang_own_files_loaded(void)
+{
+    return own_files_loaded;
+}
+
 int lang_load(int is_editor)
 {
     if (is_editor) {
         return
             load_files(FILE_EDITOR_TEXT_RUS, FILE_EDITOR_MM_RUS, MAY_BE_LOCALIZED) ||
             load_files(FILE_EDITOR_TEXT_ENG, FILE_EDITOR_MM_ENG, MAY_BE_LOCALIZED);
+    }
+    /* Multilingual (wip-25): with a non-Korean screen language, the player's own Caesar III texts, converted by
+       the launcher into the private game data, come first; Korean keeps the Korean texts. */
+    own_files_loaded = 0;
+    if (mp_language_current() && load_files(FILE_TEXT_OWN, FILE_MM_OWN, NOT_LOCALIZED)) {
+        own_files_loaded = 1;
+        return 1;
     }
     // Prefer language files from localized dir, fall back to main dir
     return
@@ -409,6 +429,9 @@ const uint8_t *lang_get_string(int group, int index)
         return translation_for(TR_EDITOR_ALLOWED_BUILDINGS_MONUMENTS);
     }
 
+    if((group==28 || group==41) && index==BUILDING_PLAYER_TRADE_POST){
+        static uint8_t name[128];encoding_from_utf8("플레이어 교역소",name,sizeof(name));return name;
+    }
     // Building strings
     if (group == 28 || group == 41) {
         switch (index) {

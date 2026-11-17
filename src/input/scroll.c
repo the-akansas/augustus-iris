@@ -57,6 +57,7 @@ static struct {
     struct {
         int active;
         int is_touch;
+        int is_middle;
         int has_started;
         pixel_offset delta;
     } drag;
@@ -247,19 +248,41 @@ void scroll_restore_margins(void)
     data.limits.active = 0;
 }
 
-void scroll_drag_start(int is_touch)
+static void drag_start(int is_touch, int is_middle)
 {
-    if (data.drag.active || (!is_touch && config_get(CONFIG_UI_DISABLE_RIGHT_CLICK_MAP_DRAG))) {
+    if (data.drag.active || (!is_touch && !is_middle && config_get(CONFIG_UI_DISABLE_RIGHT_CLICK_MAP_DRAG))) {
         return;
     }
     data.drag.active = 1;
     data.drag.is_touch = is_touch;
+    data.drag.is_middle = is_middle;
+    data.drag.has_started = 0;
     data.drag.delta.x = 0;
     data.drag.delta.y = 0;
     if (!is_touch) {
         system_mouse_get_relative_state(0, 0);
     }
     clear_scroll_speed();
+}
+
+void scroll_drag_start(int is_touch)
+{
+    drag_start(is_touch, 0);
+}
+
+int scroll_handle_middle_mouse(const mouse *m, int can_start)
+{
+    int owned = data.drag.active && data.drag.is_middle;
+    if (owned && (!m->middle.is_down || !m->window_has_focus || !m->is_inside_window)) {
+        int moved = data.drag.has_started;
+        scroll_stop();
+        return moved;
+    }
+    if (!m->is_touch && m->window_has_focus && m->is_inside_window && can_start &&
+        m->middle.went_down && m->middle.is_down && !m->left.is_down && !m->right.is_down) {
+        drag_start(0, 1);
+    }
+    return data.drag.active && data.drag.is_middle;
 }
 
 static int set_scroll_speed_from_drag(void)
@@ -297,6 +320,7 @@ static int set_scroll_speed_from_drag(void)
         }
     }
     if (data.drag.has_started) {
+        if (data.drag.is_middle) { mouse_cancel_middle_click(); }
         speed_set_target(&data.speed.x, data.drag.delta.x, SPEED_CHANGE_IMMEDIATE, 0);
         speed_set_target(&data.speed.y, data.drag.delta.y, SPEED_CHANGE_IMMEDIATE, 0);
         data.drag.delta.x = 0;
@@ -307,7 +331,7 @@ static int set_scroll_speed_from_drag(void)
 
 int scroll_drag_end(void)
 {
-    if (!data.drag.active) {
+    if (!data.drag.active || data.drag.is_middle) {
         return 0;
     }
 
@@ -533,6 +557,8 @@ void scroll_stop(void)
     data.is_scrolling = 0;
     data.constant_input = 0;
     data.drag.active = 0;
+    data.drag.is_middle = 0;
+    data.drag.has_started = 0;
     data.limits.active = 0;
 }
 

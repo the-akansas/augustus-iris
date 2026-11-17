@@ -31,6 +31,7 @@ void rich_text_set_fonts(font_t normal_font, font_t heading_font, font_t link_fo
  * Resets the text to the specified scroll position and forces recalculation of lines
  */
 void rich_text_reset(int scroll_position);
+void rich_text_set_literal(int value);
 
 void rich_text_update(void);
 

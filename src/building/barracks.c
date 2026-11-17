@@ -132,7 +132,7 @@ static int get_closest_legion_needing_soldiers(const building *barracks)
         if (!m->in_use || !m->is_legion) {
             continue;
         }
-        if (m->in_distant_battle || m->legion_recruit_type == LEGION_RECRUIT_NONE) {
+        if (m->mp_expedition_id || m->in_distant_battle || m->legion_recruit_type == LEGION_RECRUIT_NONE) {
             continue;
         }
         if (m->legion_recruit_type == LEGION_RECRUIT_LEGIONARY && barracks->resources[RESOURCE_WEAPONS] <= 0) {

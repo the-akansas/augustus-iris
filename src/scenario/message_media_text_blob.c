@@ -1,3 +1,4 @@
+#include "core/mp_i18n.h"
 #include "message_media_text_blob.h"
 
 #include "core/log.h"
@@ -31,6 +32,8 @@ static void resize_text_blob(size_t needed_space)
         if (new_blob) {
             message_media_text_blob.text_blob = new_blob;
             message_media_text_blob.max_size_text_blob = size;
+            for(size_t i=0;i<message_media_text_blob.entry_count;i++)
+                message_media_text_blob.text_entries[i].text=new_blob+message_media_text_blob.text_entries[i].offset;
         } else {
             log_error("Failed to realloc the message_media_text_blob.text_blob, the game will now probably crash.", 0, 0);
         }
@@ -47,7 +50,16 @@ static void resize_text_entries(size_t needed_entries)
     size_t needed_max_count = message_media_text_blob.entry_count + needed_entries;
     if (message_media_text_blob.max_size_text_entries < needed_max_count * sizeof(text_blob_string_t)) {
         size_t size = (needed_max_count + MESSAGE_MEDIA_TEXT_BLOB_ENTRIES_INCREASE_OVERSHOOT) * sizeof(text_blob_string_t);
-        text_blob_string_t *new_blob = realloc(message_media_text_blob.text_entries, size);
+        text_blob_string_t *new_blob = malloc(size);
+        if(new_blob){
+            memcpy(new_blob,message_media_text_blob.text_entries,message_media_text_blob.entry_count*sizeof(*new_blob));
+            /* Relink while old pointers are still valid; chat can grow past 1000 text entries. */
+            for(size_t i=0;i<message_media_text_blob.entry_count;i++){
+                if(!custom_messages_relink_text_blob(new_blob[i].id,&new_blob[i]))
+                    custom_media_relink_text_blob(new_blob[i].id,&new_blob[i]);
+            }
+            free(message_media_text_blob.text_entries);
+        }
         if (new_blob) {
             message_media_text_blob.text_entries = new_blob;
             message_media_text_blob.max_size_text_entries = size;
@@ -150,7 +162,9 @@ const text_blob_string_t *message_media_text_blob_add(const uint8_t *text)
 
 const text_blob_string_t *message_media_text_blob_add_encoded(const char *text)
 {
-    int length = (int) (sizeof(uint8_t) * (strlen(text) + 1));
+    /* Multilingual: the shown text is the translation (core/mp_i18n.c), which can be longer than the Korean key.
+       CP949 output never needs more bytes than the UTF-8 it comes from. */
+    int length = (int) (sizeof(uint8_t) * (strlen(mp_i18n_translate(text)) + 1));
     uint8_t *output = malloc(length);
     if (!output) {
         log_error("Unable to create temporary output - out of memory.", 0, 0);

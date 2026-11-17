@@ -1,4 +1,10 @@
+#include "multiplayer/army_seal.h"
+#include "multiplayer/route_post.h"
+#include "multiplayer/chat.h"
 #include "empire.h"
+#include "window/multiplayer_lobby.h"
+#include "core/mp_i18n.h"
+#include "multiplayer/clock.h"
 
 #include "assets/assets.h"
 #include "building/menu.h"
@@ -8,6 +14,7 @@
 #include "city/warning.h"
 #include "core/calc.h"
 #include "core/config.h"
+#include "core/encoding.h"
 #include "core/image_group.h"
 #include "core/string.h"
 #include "editor/editor.h"
@@ -214,11 +221,80 @@ static int g_trade_edge_count = 0;
 
 // For each route_id: a list of 0-based edge indices, terminated by -1.
 static int trade_city_edges[MAX_SIDEBAR_CITIES][MAX_TRADE_EDGES];
+/* Map zoom (mouse wheel over the map). The map picture grows and shrinks; city icons, flags, labels and route dots keep
+ * their size and only move apart or together, so cities that overlap at 1x can be told apart when zoomed in.
+ * Everything below still works in map coordinates: ezx/ezy turn a map point into the value that, added to
+ * data.x_draw_offset / y_draw_offset, lands on the zoomed position. Scrolling stays in map units (empire/empire.c is told
+ * a viewport divided by the zoom). Outside draw_map (the empire editor shares some of these functions) nothing is scaled. */
+static struct { float z; int sx, sy, on; } ezoom = { 1.0f, 0, 0, 0 };
+static int ezx(int x) { return ezoom.on && ezoom.z != 1.0f ? (int) lroundf((x - ezoom.sx) * ezoom.z) + ezoom.sx : x; }
+static int ezy(int y) { return ezoom.on && ezoom.z != 1.0f ? (int) lroundf((y - ezoom.sy) * ezoom.z) + ezoom.sy : y; }
+#define EMPIRE_ZOOM_MAX 2.0f
+#define EMPIRE_ZOOM_STEP 1.2f
+
 // measurements and scales helper functions
 static int measure_trade_row_width(const empire_city *city, int row_type, const trade_row_style *style); // ???
 static void image_draw_silh_scaled_centered(int image_id, int x, int y, color_t color, int draw_scale_percent);
-static void animation_draw_scaled(const image *img, int image_id, int new_animation, int x, int y, color_t color, int draw_scale_percent);
+static void animation_draw_scaled(const image *img, int image_id, int new_animation, int x, int y, color_t color, int draw_scale_percent, color_t player_color);
 static int open_trade_button_icon_fits(const empire_city *city, const open_trade_button_style *style, trade_icon_type icon_type);
+/* 1 unless that player has blocked me from watching their city (observe-allowed.txt). */
+static int multiplayer_visit_allowed(int name_id)
+{
+ const char *dir=getenv("AUGUSTUS_MP_BRIDGE");if(!dir || !(mp_clock_active() || window_multiplayer_spectating()))return 1;
+ char path[2048],line[64];snprintf(path,sizeof(path),"%s/observe-allowed.txt",dir);
+ FILE *f=fopen(path,"rb");if(!f)return 1;
+ int allowed=1,id,value;while(fgets(line,sizeof(line),f)){if(sscanf(line,"%d %d",&id,&value)==2 && id==name_id){allowed=value!=0;break;}}
+ fclose(f);return allowed;
+}
+/* A spectator's empire map (window_multiplayer_spectating(), Korean edition): the cities somebody plays are the ones
+ * observe-allowed.txt lists (spectate_client.py), whatever their type in the start map that was loaded. */
+static int spectator_seat(int name_id)
+{
+ if(!window_multiplayer_spectating())return 0;
+ const char *dir=getenv("AUGUSTUS_MP_BRIDGE");if(!dir)return 0;
+ char path[2048],line[64];snprintf(path,sizeof(path),"%s/observe-allowed.txt",dir);
+ FILE *f=fopen(path,"rb");if(!f)return 0;
+ int found=0,id,value;while(fgets(line,sizeof(line),f)){if(sscanf(line,"%d %d",&id,&value)==2 && id==name_id){found=1;break;}}
+ fclose(f);return found;
+}
+/* The ID of the player of that city (empire-player-names.txt: name id, player; game_bridge.py for a player,
+ * spectate_client.py for a spectator). Shown beside a player's city (user 2026-11-17). */
+static void spectator_player(int name_id,char *out,size_t size)
+{
+ out[0]=0;
+ const char *dir=getenv("AUGUSTUS_MP_BRIDGE");if(!dir)return;
+ char path[2048],line[512];snprintf(path,sizeof(path),"%s/empire-player-names.txt",dir);
+ FILE *f=fopen(path,"rb");if(!f)return;
+ while(fgets(line,sizeof(line),f)){
+  if(atoi(line)!=name_id || line[0]<'0' || line[0]>'9')continue;
+  char *p=strchr(line,'\t');if(p)p++;
+  if(p){p[strcspn(p,"\t\r\n")]=0;snprintf(out,size,"%s",p);}
+  break;
+ }
+ fclose(f);
+}
+static void empire_leave(void)
+{
+ if(window_multiplayer_spectating()){window_multiplayer_spectate_leave_map();return;}   /* no city of one's own to go back to */
+ window_city_show();
+}
+/* A dimmed player-city button still answers a click with its reason. */
+static char player_action_reason[160];
+static time_millis player_action_reason_until;
+static void player_action_explain(const char *text)
+{
+ snprintf(player_action_reason,sizeof(player_action_reason),"%s",text);
+ player_action_reason_until=time_get_millis()+3500;window_request_refresh();
+}
+static int multiplayer_city_dormant(int name_id)
+{
+ const char *dir=getenv("AUGUSTUS_MP_BRIDGE");if(!dir || !(mp_clock_active() || window_multiplayer_spectating()))return 0;
+ char path[2048],line[64];snprintf(path,sizeof(path),"%s/empire-dormant-cities.txt",dir);
+ FILE *f=fopen(path,"rb");if(!f)return 0;
+ int found=0;while(fgets(line,sizeof(line),f)){if(atoi(line)==name_id){found=1;break;}}
+ fclose(f);return found;
+}
+
 static void draw_sidebar_city_item(const grid_box_item *item);
 static int draw_images_at_interval(int image_id, int x_draw_offset, int y_draw_offset,
     int start_x, int start_y, int end_x, int end_y, int interval, int remaining, color_t color_mask);
@@ -355,6 +431,7 @@ static struct {
     int selected_trade_route;
     int x_min, x_max, y_min, y_max;
     int x_draw_offset, y_draw_offset;
+    float zoom_lowest;
     int screen_width, screen_height;
     int usable_map_width;
     unsigned int focus_button_id;
@@ -616,6 +693,15 @@ static unsigned char sidebar_width_percent_for_content_width(int content_width)
     return 70;
 }
 
+/* Preserve a useful map viewport when opening on small logical resolutions.
+ * Do not overwrite the saved preference; manual expansion remains available. */
+static unsigned char sidebar_initial_width_percent(unsigned char requested)
+{
+    int map_width = data.usable_map_width - 2 * WIDTH_BORDER
+        - sidebar_outer_width_from_percent(requested);
+    return map_width < 400 ? 0 : requested;
+}
+
 static void setup_sidebar(void)
 
 {
@@ -642,6 +728,8 @@ static void setup_sidebar(void)
     } else {
         data.sidebar.width_percent = CLAMP(0, configured_width_percent, 100);
     }
+
+    data.sidebar.width_percent = sidebar_initial_width_percent(data.sidebar.width_percent);
 
     // Use only one width source - prefer dragging width when actively dragging
     unsigned char active_width_percent = data.sidebar.dragging ? data.sidebar.dragging_width : data.sidebar.width_percent;
@@ -1424,7 +1512,7 @@ static void draw_trade_route_pulse_index(int image_id, int x_offset, int y_offse
             int x = calc_adjust_with_percentage(along, x_factor) + edge->x1;
             int y = calc_adjust_with_percentage(along, y_factor) + edge->y1;
 
-            image_draw_scaled_centered(image_id, x_offset + x, y_offset + y, COLOR_MASK_NONE, TRADE_DOT_ANIMATION_SCALE);
+            image_draw_scaled_centered(image_id, x_offset + ezx(x), y_offset + ezy(y), COLOR_MASK_NONE, TRADE_DOT_ANIMATION_SCALE);
             return;
         }
         accumulated_distance += segment_length;
@@ -1521,6 +1609,7 @@ void window_empire_draw_resource_shields(int trade_max, int x_offset, int y_offs
 
 void draw_open_trade_button(const empire_city *city, const open_trade_button_style *style, trade_icon_type icon_type)
 {
+    if (window_multiplayer_spectating()) return;   /* a spectator opens no route: the goods and the description stay */
     int cost = city->cost_to_open;
     int x = style->button_x_min;
     int y = style->button_y_min;
@@ -1865,6 +1954,25 @@ static void draw_city_info(const empire_object *object)
     int x_offset = (data.x_min + data.x_max - 240) / 2;
     int y_offset = data.y_max - 88;
     const empire_city *city = empire_city_get(data.selected_city);
+    if(spectator_seat(city->name_id)){   /* a spectator: one button, no trade or money */
+        uint8_t label[160];
+        int watchable=multiplayer_visit_allowed(city->name_id);
+        int explaining=player_action_reason[0] && time_get_millis()<player_action_reason_until;
+        char player[128];spectator_player(city->name_id,player,sizeof(player));
+        if(explaining || !player[0]){
+            encoding_from_utf8(explaining?player_action_reason:"플레이어의 도시", label, sizeof(label));
+            text_draw_centered(label, x_offset-40, y_offset + 24, 316, explaining?FONT_NORMAL_RED:FONT_NORMAL_GREEN, 0);
+        }else{   /* whose city: the ID as the player typed it (never translated) */
+            char line[200];snprintf(line,sizeof(line),"%s  %s",mp_i18n_translate("플레이어"),player);
+            encoding_from_utf8(line, label, sizeof(label));
+            mp_i18n_suspend(1);text_draw_centered(label, x_offset-40, y_offset + 24, 316, FONT_NORMAL_GREEN, 0);mp_i18n_suspend(0);
+        }
+        if(explaining)window_request_refresh();
+        large_label_draw_custom_size(x_offset+60,y_offset+40,116,28);
+        encoding_from_utf8("이 도시 관전",label,sizeof(label));
+        text_draw_centered(label,x_offset+60,y_offset+48,116,watchable?FONT_NORMAL_BLACK:FONT_NORMAL_BROWN,watchable?0:COLOR_FONT_GRAY_GREEN);
+        return;
+    }
     switch (city->type) {
         case EMPIRE_CITY_DISTANT_ROMAN:
             lang_text_draw_centered(47, 12, x_offset, y_offset + 42, 240, FONT_NORMAL_GREEN);
@@ -1879,11 +1987,45 @@ static void draw_city_info(const empire_object *object)
         case EMPIRE_CITY_FUTURE_TRADE:
         case EMPIRE_CITY_DISTANT_FOREIGN:
         case EMPIRE_CITY_FUTURE_ROMAN:
+            if(mp_clock_active() && city->type==EMPIRE_CITY_FUTURE_ROMAN){
+                uint8_t label[160];encoding_from_utf8("플레이어 참가 대기 도시",label,sizeof(label));
+                text_draw_centered(label,x_offset,y_offset+24,240,FONT_NORMAL_GREEN,0);
+                encoding_from_utf8("현재 교역하지 않습니다.",label,sizeof(label));
+                text_draw_centered(label,x_offset,y_offset+44,240,FONT_NORMAL_GREEN,0);break;
+            }
             lang_text_draw_centered(47, 0, x_offset, y_offset + 42, 240, FONT_NORMAL_GREEN);
             break;
         case EMPIRE_CITY_OURS:
             lang_text_draw_centered(47, 1, x_offset, y_offset + 42, 240, FONT_NORMAL_GREEN);
             break;
+        case EMPIRE_CITY_PLAYER: {
+            uint8_t label[160];
+            int dormant=multiplayer_city_dormant(city->name_id);
+            int watchable=!dormant && multiplayer_visit_allowed(city->name_id);
+            int explaining=player_action_reason[0] && time_get_millis()<player_action_reason_until;
+            char whose[128];spectator_player(city->name_id,whose,sizeof(whose));
+            int named=!explaining && !dormant && whose[0];
+            if(named){   /* whose city: the ID as typed (never translated) */
+                char line[200];snprintf(line,sizeof(line),"%s  %s",mp_i18n_translate("플레이어"),whose);
+                encoding_from_utf8(line, label, sizeof(label));
+            } else
+            encoding_from_utf8(explaining?player_action_reason:dormant?"중립 도시 · 플레이어 접속 끊김":"상대 플레이어의 도시", label, sizeof(label));
+            if(named)mp_i18n_suspend(1);
+            text_draw_centered(label, x_offset-40, y_offset + 24, 316, explaining?FONT_NORMAL_RED:FONT_NORMAL_GREEN, 0);
+            if(named)mp_i18n_suspend(0);
+            if(explaining)window_request_refresh();
+            const char *actions[]={dormant?"교역 중단":"교역","돈 보내기","도시 관람","군단 파견"};
+            /* Army dispatch sealed: three buttons, centred where the four were (multiplayer/army_seal.h). */
+            int action_count=MP_ARMY_DISPATCH_SEALED?3:4,action_left=x_offset-40+(4-action_count)*40;
+            for(int action=0;action<action_count;action++){
+                large_label_draw_custom_size(action_left+action*80,y_offset+40,76,28);
+                encoding_from_utf8(actions[action],label,sizeof(label));
+                int enabled=action==2?watchable:!dormant;
+                /* Disabled: same font, greyed, so it reads as unavailable at a glance. */
+                text_draw_centered(label,action_left+action*80,y_offset+48,76,enabled?FONT_NORMAL_BLACK:FONT_NORMAL_BROWN,enabled?0:COLOR_FONT_GRAY_GREEN); /* same glyph size either way */
+            }
+            break;
+        }
         case EMPIRE_CITY_TRADE:
             draw_trade_city_info(object, city);
             break;
@@ -1910,6 +2052,8 @@ static void draw_enemy_army_info(const empire_object *object)
         data.y_max - 68,
         240, FONT_NORMAL_GREEN);
 }
+
+static int draw_mp_empire_rome_info(void); /* empire_rome.inc */
 
 static void draw_object_info(void)
 {
@@ -1940,7 +2084,7 @@ static void draw_object_info(void)
                     data.panel.x_max - data.panel.x_min, FONT_NORMAL_GREEN);
                 break;
         }
-    } else {
+    } else if (!draw_mp_empire_rome_info()) {
         lang_text_draw_centered(47, 8, data.panel.x_min, data.y_max - 48,
             data.panel.x_max - data.panel.x_min, FONT_NORMAL_GREEN);
     }
@@ -2003,7 +2147,7 @@ static int draw_images_at_interval(int image_id, int x_draw_offset, int y_draw_o
         for (int j = 0; j <= num_dots; j++) {
             int x = calc_adjust_with_percentage(j * interval + offset, x_factor) + start_x;
             int y = calc_adjust_with_percentage(j * interval + offset, y_factor) + start_y;
-            image_draw(image_id, x_draw_offset + x, y_draw_offset + y, color_mask, SCALE_NONE);
+            image_draw(image_id, x_draw_offset + ezx(x), y_draw_offset + ezy(y), color_mask, SCALE_NONE);
         }
     }
     return remaining;
@@ -2076,6 +2220,12 @@ void window_empire_draw_border(const empire_object *border, int x_offset, int y_
     }
 }
 
+/* A player city keeps its original waving flag; only the cloth takes the
+ * player's colour (shading stays). No extra art, so nothing can go missing. */
+static void empire_draw_player_flag(int base,int frame,int x,int y,color_t normal,color_t player,float scale){
+    mp_draw_player_tint(base+frame,x,y,player,normal,scale);
+}
+
 static void draw_empire_object(const empire_object *obj)
 {
     if (obj->type == EMPIRE_OBJECT_TRADE_WAYPOINT || obj->type == EMPIRE_OBJECT_BORDER_EDGE) {
@@ -2092,7 +2242,13 @@ static void draw_empire_object(const empire_object *obj)
         }
     }
     int x, y, image_id;
-    color_t color_mask = COLOR_MASK_NONE;
+    color_t color_mask = COLOR_MASK_NONE, player_color = 0;
+    if((mp_clock_active() || window_multiplayer_spectating()) && obj->type==EMPIRE_OBJECT_CITY){
+        const empire_city *player=empire_city_get(empire_city_get_for_object(obj->id));
+        player_color=mp_route_empire_color(player->name_id);
+        /* A player seat nobody took ("플레이어 참가 대기 도시") flies a white flag. */
+        if(!player_color && player->type==EMPIRE_CITY_FUTURE_ROMAN)player_color=0xfff4f4f0;
+    }
     if (scenario_empire_is_expanded()) {
         x = obj->expanded.x;
         y = obj->expanded.y;
@@ -2101,6 +2257,13 @@ static void draw_empire_object(const empire_object *obj)
         x = obj->x;
         y = obj->y;
         image_id = obj->image_id;
+    }
+    if (ezoom.on && ezoom.z != 1.0f) {
+        /* Same-size picture around its zoomed centre. A city's centre is +25,+25, as the routes and the freight icons use. */
+        int half_w = obj->type == EMPIRE_OBJECT_CITY ? 25 : obj->width / 2;
+        int half_h = obj->type == EMPIRE_OBJECT_CITY ? 25 : obj->height / 2;
+        x = ezx(x + half_w) - half_w;
+        y = ezy(y + half_h) - half_h;
     }
     if (image_id > image_group(GROUP_EMPIRE_TRADE_LAND) && image_id < image_group(GROUP_EMPIRE_TRADE_LAND) + 16 &&
         empire_object_get_full(empire_city_get(empire_city_get_for_trade_route(obj->trade_route_id))->empire_object_id + 1)->route_hidden) {
@@ -2183,7 +2346,7 @@ static void draw_empire_object(const empire_object *obj)
 
             if (img->animation && img->animation->speed_id) {
                 int new_animation = empire_object_update_animation(obj, image_id);
-                animation_draw_scaled(img, image_id, new_animation, data.x_draw_offset + x, data.y_draw_offset + y, COLOR_MASK_NONE, 130);
+                animation_draw_scaled(img, image_id, new_animation, data.x_draw_offset + x, data.y_draw_offset + y, COLOR_MASK_NONE, 130, player_color);
             }
         } else {
             if (obj->empire_city_icon == EMPIRE_CITY_ICON_BUTTON) {
@@ -2194,7 +2357,7 @@ static void draw_empire_object(const empire_object *obj)
 
             if (img->animation && img->animation->speed_id) {
                 int new_animation = empire_object_update_animation(obj, image_id);
-                animation_draw_scaled(img, image_id, new_animation, data.x_draw_offset + x, data.y_draw_offset + y, COLOR_MASK_NONE, 120);
+                animation_draw_scaled(img, image_id, new_animation, data.x_draw_offset + x, data.y_draw_offset + y, COLOR_MASK_NONE, 120, player_color);
             }
         }
 
@@ -2202,10 +2365,10 @@ static void draw_empire_object(const empire_object *obj)
         image_draw(image_id, data.x_draw_offset + x, data.y_draw_offset + y, color_mask, SCALE_NONE);
         if (img->animation && img->animation->speed_id) {
             int new_animation = empire_object_update_animation(obj, image_id);
-            image_draw(image_id + new_animation,
+            empire_draw_player_flag(image_id,new_animation,
                 data.x_draw_offset + x + img->animation->sprite_offset_x,
                 data.y_draw_offset + y + img->animation->sprite_offset_y,
-                color_mask, SCALE_NONE);
+                color_mask, player_color, SCALE_NONE);
         }
     }
 
@@ -2228,7 +2391,7 @@ static void empire_draw_object_trade_route(const empire_object *obj)
     return;
 }
 
-static void animation_draw_scaled(const image *img, int image_id, int new_animation, int x, int y, color_t color, int draw_scale_percent)
+static void animation_draw_scaled(const image *img, int image_id, int new_animation, int x, int y, color_t color, int draw_scale_percent, color_t player_color)
 {
     int anim_x = (x + img->width * (100 - draw_scale_percent) / 200) * 100 / draw_scale_percent;
     int anim_y = (y + img->height * (100 - draw_scale_percent) / 200) * 100 / draw_scale_percent;
@@ -2239,7 +2402,7 @@ static void animation_draw_scaled(const image *img, int image_id, int new_animat
         anim_y += img->animation->sprite_offset_y;
     }
 
-    image_draw(image_id + new_animation, anim_x, anim_y, color, 100.0f / draw_scale_percent);
+    empire_draw_player_flag(image_id,new_animation,anim_x,anim_y,color,player_color,100.0f/draw_scale_percent);
 }
 
 static void image_draw_silh_scaled_centered(int image_id, int x, int y, color_t color, int draw_scale_percent)
@@ -2255,7 +2418,7 @@ static void image_draw_silh_scaled_centered(int image_id, int x, int y, color_t 
 
 static void draw_invasion_warning(int x, int y, int image_id)
 {
-    image_draw(image_id, data.x_draw_offset + x, data.y_draw_offset + y, COLOR_MASK_NONE, SCALE_NONE);
+    image_draw(image_id, data.x_draw_offset + ezx(x), data.y_draw_offset + ezy(y), COLOR_MASK_NONE, SCALE_NONE);
 }
 
 void empire_reset_route_drawn_flags(void)
@@ -2264,6 +2427,11 @@ void empire_reset_route_drawn_flags(void)
         g_trade_edges[i].drawn = 0;
     }
 }
+
+#include "empire_transport.inc"
+
+#include "empire_player_dots.inc"
+#include "empire_rome.inc"
 
 static void draw_map(void)
 {
@@ -2281,11 +2449,28 @@ static void draw_map(void)
     // Reset all edge drawn flags for this frame
     empire_reset_route_drawn_flags();
 
-    empire_set_viewport(map_clip_x_max - map_clip_x_min, map_clip_y_max - map_clip_y_min);
+    /* Zoom: never smaller than what fills the map area (no empty bands), never past the maximum. */
+    {
+        int image_width, image_height;
+        empire_get_map_size(&image_width, &image_height);
+        float fill_x = (map_clip_x_max - map_clip_x_min) / (float) (image_width > 0 ? image_width : 1);
+        float fill_y = (map_clip_y_max - map_clip_y_min) / (float) (image_height > 0 ? image_height : 1);
+        float lowest = fill_x > fill_y ? fill_x : fill_y;
+        if (lowest > 1.0f || config_get(CONFIG_FIX_EMPIRE_MAP_DIMENSIONS)) {
+            lowest = 1.0f; /* a map smaller than the window (or kept in its own frame) is not shrunk */
+        }
+        if (ezoom.z < lowest) ezoom.z = lowest;
+        if (ezoom.z > EMPIRE_ZOOM_MAX) ezoom.z = EMPIRE_ZOOM_MAX;
+        data.zoom_lowest = lowest;
+    }
+    empire_set_viewport((int) ((map_clip_x_max - map_clip_x_min) / ezoom.z), (int) ((map_clip_y_max - map_clip_y_min) / ezoom.z));
 
     data.x_draw_offset = map_clip_x_min;
     data.y_draw_offset = map_clip_y_min;
     empire_adjust_scroll(&data.x_draw_offset, &data.y_draw_offset);
+    ezoom.sx = map_clip_x_min - data.x_draw_offset;
+    ezoom.sy = map_clip_y_min - data.y_draw_offset;
+    ezoom.on = 1;
 
     if (config_get(CONFIG_FIX_EMPIRE_MAP_DIMENSIONS)) {
         int map_width, map_height;
@@ -2312,7 +2497,14 @@ static void draw_map(void)
         graphics_set_clip_rectangle(clip_x, clip_y, clip_width, clip_height);
     }
 
-    image_draw(empire_get_image_id(), data.x_draw_offset, data.y_draw_offset, COLOR_MASK_NONE, SCALE_NONE);
+    if (ezoom.z != 1.0f) {
+        /* image_draw divides position and size by its scale: 1/zoom enlarges by the zoom. */
+        float s = 1.0f / ezoom.z;
+        image_draw(empire_get_image_id(), (int) lroundf((data.x_draw_offset + ezx(0)) * s),
+            (int) lroundf((data.y_draw_offset + ezy(0)) * s), COLOR_MASK_NONE, s);
+    } else {
+        image_draw(empire_get_image_id(), data.x_draw_offset, data.y_draw_offset, COLOR_MASK_NONE, SCALE_NONE);
+    }
     if (data.trade_route_anim_start == 0) {
         data.trade_route_anim_start = time_get_millis();
     }
@@ -2320,15 +2512,19 @@ static void draw_map(void)
     empire_object_foreach(draw_empire_object);
     empire_object_foreach_of_type(empire_draw_object_trade_route, EMPIRE_OBJECT_SEA_TRADE_ROUTE);
     empire_object_foreach_of_type(empire_draw_object_trade_route, EMPIRE_OBJECT_LAND_TRADE_ROUTE);
+    draw_player_link_dots();
+    draw_mp_empire_rome();
     empire_object_foreach_of_type(draw_empire_object, EMPIRE_OBJECT_LAND_TRADE_ROUTE);
     empire_object_foreach_of_type(draw_empire_object, EMPIRE_OBJECT_SEA_TRADE_ROUTE);
     empire_object_foreach_of_type(draw_empire_object, EMPIRE_OBJECT_CITY);
 
     scenario_invasion_foreach_warning(draw_invasion_warning);
+    freight_map();
     int map_width = map_clip_x_max - map_clip_x_min;
     int map_height = map_clip_y_max - map_clip_y_min;
     graphics_shade_rect(map_clip_x_min, map_clip_y_min, map_width, map_height, data.sidebar.trade_year ? 7 : 0);
 
+    ezoom.on = 0;
     graphics_reset_clip_rectangle();
 }
 
@@ -2383,7 +2579,7 @@ static void draw_panel_buttons(void)
 {
     image_buttons_draw(data.panel.x_min + 20, data.y_max - 44, image_button_help, 1);
     image_buttons_draw(data.panel.x_max - 44, data.y_max - 44, image_button_return_to_city, 1);
-    image_buttons_draw(data.panel.x_max - 44, data.y_max - 100, image_button_advisor, 1);
+    if (!window_multiplayer_spectating()) image_buttons_draw(data.panel.x_max - 44, data.y_max - 100, image_button_advisor, 1);
     image_buttons_draw(data.panel.x_min + 24, data.y_max - 100, image_button_show_prices, 1);
     if (data.selected_button != NO_POSITION) {
         const trade_open_button *btn = &trade_open_buttons[data.selected_button];
@@ -2447,10 +2643,33 @@ static void draw_trade_button_highlights(void)
 //                                              DRAW FOREGROUND
 // -------------------------------------------------------------------------------------------------------
 
+/* Multiplayer: the city's trade-status side tab, opened over the map from a label button
+ * at the map's top left. Presentation only (window_multiplayer_side_trade_*). */
+static void mp_trade_status_rect(int *x,int *y,int *w,int *h){*x=data.x_min+24;*y=data.y_min+20;*w=128;*h=28;}
+static int mp_trade_status_panel_height(void){return data.y_max-BOTTOM_PANEL_HEIGHT-(data.y_min+56)-8;}
+static void mp_trade_status_draw(void)
+{
+    if(!mp_clock_active())return;
+    int x,y,w,h;mp_trade_status_rect(&x,&y,&w,&h);
+    const mouse *m=mouse_get();int open=window_multiplayer_side_trade_open();
+    large_label_draw_custom_size(x,y,w,h);
+    if(open || (m->x>=x && m->x<x+w && m->y>=y && m->y<y+h))button_border_draw(x,y,w,h,1);
+    uint8_t label[64];encoding_from_utf8(open?"무역 현황 닫기":"무역 현황",label,sizeof(label));
+    text_draw_centered(label,x,y+8,w,FONT_NORMAL_BLACK,0);
+    window_multiplayer_side_trade_draw(x,y+h+8,mp_trade_status_panel_height());
+}
+static int mp_trade_status_input(const mouse *m)
+{
+    if(!mp_clock_active())return 0;
+    int x,y,w,h;mp_trade_status_rect(&x,&y,&w,&h);
+    if(m->x>=x && m->x<x+w && m->y>=y && m->y<y+h){if(m->left.went_up){window_multiplayer_side_trade_toggle();window_invalidate();}return 1;}
+    return window_multiplayer_side_trade_input(m,x,y+h+8,mp_trade_status_panel_height());
+}
 static void draw_foreground(void)
 {
+    if (window_multiplayer_spectating() && window_multiplayer_spectate_tick()) return;   /* spectating ended: the hall took over */
     draw_map();
-    draw_map_widget();
+    if (!window_multiplayer_spectating()) draw_map_widget();   /* funds and date of a city nobody plays: not for a spectator */
     refresh_screen_geometry();
     refresh_sidebar_gridbox();
     resource_button_count = 0;
@@ -2476,17 +2695,27 @@ static void draw_foreground(void)
     draw_object_info();
     draw_panel_buttons();
     draw_trade_button_highlights();
+    freight_card();
+    mp_trade_status_draw();
+    if (window_multiplayer_spectating()) window_multiplayer_spectate_banner(data.x_min, data.y_min, data.x_max - data.x_min);
 }
 
 static void determine_selected_object(const mouse *m)
 {
     if (is_map(m)) {
         if (!m->left.went_up || data.finished_scroll) {
-            int hovered_obj_id = empire_get_hovered_object(m->x - data.x_min - 16, m->y - data.y_min - 16);
+            int hovered_obj_id = empire_get_hovered_object((int) ((m->x - data.x_min - 16) / ezoom.z), (int) ((m->y - data.y_min - 16) / ezoom.z));
             data.hovered_object = hovered_obj_id;
             return;
         } else {
-            empire_select_object(m->x - data.x_min - 16, m->y - data.y_min - 16);
+            int map_x = (int) ((m->x - data.x_min - 16) / ezoom.z), map_y = (int) ((m->y - data.y_min - 16) / ezoom.z);
+            if (!empire_get_hovered_object(map_x, map_y) && mp_empire_rome_hit(m->x, m->y)) {
+                empire_clear_selected_object(); /* Rome: description only (empire_rome.inc) */
+                mp_empire_rome.selected = 1;
+            } else {
+                mp_empire_rome.selected = 0;
+                empire_select_object(map_x, map_y);
+            }
             window_invalidate();
         }
     } else if (is_sidebar(m)) {
@@ -2557,6 +2786,7 @@ static int is_outside_map(int x, int y)
 
 static void handle_sidebar_border(const mouse *m)
 {
+    if (window_multiplayer_spectating()) return;   /* no trade list for a spectator */
     // Set hover state
     data.sidebar.border_btn.is_hovered = is_sidebar_border(m);
 
@@ -2814,15 +3044,74 @@ static void reset_filter_click(complex_button *button)
 
 static void handle_input(const mouse *m, const hotkeys *h)
 {
+    if (mp_empire_rome_button_click(m)) {
+        return; /* Race for the Throne buttons under Rome's description (empire_rome.inc) */
+    }
+    if(mp_trade_status_input(m))return;
+    if(freight_input(m))return;
+    if (data.selected_city && spectator_seat(empire_city_get(data.selected_city)->name_id)) {   /* the spectator's one button */
+        int x=(data.x_min+data.x_max-240)/2+60, y=data.y_max-48;
+        if(m->x>=x && m->x<x+116 && m->y>=y && m->y<y+28){
+            int name_id=empire_city_get(data.selected_city)->name_id;
+            if(m->left.went_up){
+                if(!multiplayer_visit_allowed(name_id))player_action_explain("이 플레이어는 관전자에게 도시를 보여 주지 않습니다.");
+                else window_city_visit_show(name_id);
+            }
+            return;
+        }
+    }
+    if (mp_clock_active() && data.selected_city && empire_city_get(data.selected_city)->type == EMPIRE_CITY_PLAYER) {
+        int action_count=MP_ARMY_DISPATCH_SEALED?3:4;
+        int x=(data.x_min+data.x_max-240)/2-40+(4-action_count)*40, y=data.y_max-48;
+        if(m->x>=x && m->x<x+action_count*80-4 && m->y>=y && m->y<y+28){
+            int name_id=empire_city_get(data.selected_city)->name_id,action=(m->x-x)/80,dormant=multiplayer_city_dormant(name_id);
+            if(m->left.went_up && (m->x-x)%80<76){
+                if(dormant && action!=2)player_action_explain("접속이 끊긴 플레이어의 도시라 지금은 할 수 없습니다.");
+                else if(action==0)window_multiplayer_trade_show_for_city(name_id);
+                else if(action==1)window_multiplayer_cash_show(name_id);
+                else if(action==2 && dormant)player_action_explain("접속이 끊긴 도시는 관람할 수 없습니다.");
+                else if(action==2 && !multiplayer_visit_allowed(name_id))player_action_explain("이 플레이어가 자기 도시 관람을 허용하지 않았습니다.");
+                else if(action==2)window_city_visit_show(name_id);
+                else if(action==3 && !MP_ARMY_DISPATCH_SEALED)window_multiplayer_army_show(name_id);
+            }
+            return;
+        }
+    }
+
     pixel_offset position;
     if (data.sidebar.dragging) {
         handle_sidebar_dragging(m);
         return; //block other input handling if the sidebar is being dragged
     }
-    if (scroll_get_delta(m, &position, SCROLL_TYPE_EMPIRE)) {
-        empire_scroll_map(position.x, position.y);
+    /* Mouse wheel over the map: zoom around the pointer (the map point under it stays under it). */
+    if (m->scrolled != SCROLL_NONE && is_map(m)) {
+        float before = ezoom.z, after = m->scrolled == SCROLL_UP ? before * EMPIRE_ZOOM_STEP : before / EMPIRE_ZOOM_STEP;
+        float lowest = data.zoom_lowest > 0.0f ? data.zoom_lowest : 1.0f;
+        if (after > 0.96f && after < 1.04f) after = 1.0f; /* stop exactly on the original size */
+        if (after < lowest) after = lowest;
+        if (after > EMPIRE_ZOOM_MAX) after = EMPIRE_ZOOM_MAX;
+        if (after != before) {
+            int px = m->x - data.x_min - 16, py = m->y - data.y_min - 16;
+            ezoom.z = after;
+            empire_set_viewport((int) ((data.sidebar.x_min - data.x_min - 16) / after), (int) ((data.y_max - BOTTOM_PANEL_HEIGHT - data.y_min - 16) / after));
+            empire_scroll_map((int) lroundf(px / before - px / after), (int) lroundf(py / before - py / after));
+            window_invalidate();
+        }
+        return;
     }
-    widget_empire_funds_handle_mouse(m, 0, 0);
+    int middle_drag = scroll_handle_middle_mouse(m, is_map(m));
+    if (scroll_get_delta(m, &position, SCROLL_TYPE_EMPIRE)) {
+        /* drag distances are screen pixels; the map scrolls in map units */
+        static float carry_x, carry_y;
+        float fx = position.x / ezoom.z + carry_x, fy = position.y / ezoom.z + carry_y;
+        int ix = (int) fx, iy = (int) fy;
+        carry_x = fx - ix; carry_y = fy - iy;
+        empire_scroll_map(ix, iy);
+    }
+    if (middle_drag) {
+        return;
+    }
+    if (!window_multiplayer_spectating()) widget_empire_funds_handle_mouse(m, 0, 0);
     if (data.is_scrolling) {
         if (m->right.went_up) {
             data.finished_scroll = scroll_drag_end();
@@ -2893,7 +3182,7 @@ static void handle_input(const mouse *m, const hotkeys *h)
     if (button_id) {
         data.focus_button_id = 2;
     }
-    image_buttons_handle_mouse(m, data.panel.x_max - 44, data.y_max - 100, image_button_advisor, 1, &button_id);
+    if (!window_multiplayer_spectating()) image_buttons_handle_mouse(m, data.panel.x_max - 44, data.y_max - 100, image_button_advisor, 1, &button_id);
     if (button_id) {
         data.focus_button_id = 3;
     }
@@ -2923,7 +3212,7 @@ static void handle_input(const mouse *m, const hotkeys *h)
 
     }
     data.selected_button = NO_POSITION;
-    if (!data.sidebar.trade_year) { // only allow trade route opening if the trade year is current
+    if (!data.sidebar.trade_year && !window_multiplayer_spectating()) { // only allow trade route opening if the trade year is current
         for (int i = 0; i < trade_open_button_count; i++) {
             const trade_open_button *btn = &trade_open_buttons[i];
 
@@ -2969,27 +3258,27 @@ static void handle_input(const mouse *m, const hotkeys *h)
                     }
                     break;
                 default:
-                    window_city_show();
+                    empire_leave();
                     break;
             }
         }
 
     } else {
         if (is_sidebar(m)) {
-            if (m->right.went_up) {
+            if (m->right.went_up && !window_multiplayer_spectating()) {   /* a spectator leaves with Esc only (user 2026-11-17: a right click on the map dropped the view) */
                 if (input_go_back_requested(m, h)) {
-                    window_city_show();
+                    empire_leave();
                 }
             }
             return; // sidebar handling went through earlier - prevent clicks falling through to map
         }
-        if (m->right.went_up) {
+        if (m->right.went_up && !window_multiplayer_spectating()) {
             if (input_go_back_requested(m, h)) {
-                window_city_show();
+                empire_leave();
             }
         }
         if (h->close_pressed) {
-            window_city_show();
+            empire_leave();
         }
     }
 }
@@ -3145,7 +3434,7 @@ static void get_tooltip(tooltip_context *c)
         c->type = TOOLTIP_BUTTON;
         c->text_group = CUSTOM_TRANSLATION;
         c->text_id = TR_TOOLTIP_CHANGE_SIDEBAR_WIDTH;
-    } else if (widget_empire_funds_handle_tooltip(c)) {
+    } else if (!window_multiplayer_spectating() && widget_empire_funds_handle_tooltip(c)) {
         return;
     } else if (get_city_name_tooltip(c)) {
         return;
@@ -3176,11 +3465,12 @@ static void button_help(int param1, int param2)
 
 static void button_return_to_city(int param1, int param2)
 {
-    window_city_show();
+    empire_leave();
 }
 
 static void button_advisor(int advisor, int param2)
 {
+    if (window_multiplayer_spectating()) return;
     window_advisors_show_advisor(advisor);
 }
 
@@ -3279,6 +3569,7 @@ void window_empire_show(void)
 {
     init();
     setup_sidebar();
+    if (window_multiplayer_spectating()) sidebar_collapse();   /* a spectator: the map and the city panel only */
     grid_box_init(&sidebar_grid_box, sidebar_city_count);
     window_type window = {
         WINDOW_EMPIRE,
@@ -3304,3 +3595,4 @@ void window_empire_show_checked(void)
         city_warning_show(avail == NOT_AVAILABLE ? WARNING_NOT_AVAILABLE : WARNING_NOT_AVAILABLE_YET, NEW_WARNING_SLOT);
     }
 }
+

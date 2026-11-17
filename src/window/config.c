@@ -1,11 +1,14 @@
 #include "config.h"
 
 #include "core/calc.h"
+#include "core/encoding.h"
 #include "core/config.h"
 #include "core/dir.h"
 #include "core/image_group.h"
+#include "core/image.h"
 #include "core/lang.h"
 #include "core/log.h"
+#include "core/mp_language.h"
 #include "core/string.h"
 #include "game/game.h"
 #include "game/settings.h"
@@ -38,6 +41,7 @@
 #include "window/user_path_setup.h"
 
 #include <stdio.h>
+#include "platform/screen.h"
 #include <string.h>
 
 #define MAX_LANGUAGE_DIRS 20
@@ -74,13 +78,16 @@ enum {
     TYPE_CHECKBOX,
     TYPE_SELECT, // dropdown or text input
     TYPE_NUMERICAL_DESC, //  label line for a slider
-    TYPE_NUMERICAL_RANGE
+    TYPE_NUMERICAL_RANGE,
+    TYPE_FONT_PREVIEW
 };
 
 enum {
     SELECT_LANGUAGE,
     SELECT_PLAYER_NAME,
-    SELECT_USER_DIRECTORY
+    SELECT_USER_DIRECTORY,
+    SELECT_KOREAN_FONT,
+    SELECT_MP_LANGUAGE
 };
 
 enum {
@@ -134,6 +141,9 @@ enum {
     CONFIG_STRING_MAX_ALL
 };
 
+static int room_options_at_open;
+static int room_key_readonly(int key){return (room_options_at_open || config_room_active()) && (key==CONFIG_ORIGINAL_DIFFICULTY || key==CONFIG_ORIGINAL_GODS_EFFECTS || (key<CONFIG_MAX_ENTRIES && config_room_index(key)>=0));}
+
 //  Widget main struct - use this for all widgets to ensure unified treatment, while allowing multiline checkboxes,
 //  variable height and width
 
@@ -159,6 +169,7 @@ static const translation_key size_labels[] = {
 };
 
 static const uint8_t *display_text_language(void);
+static const uint8_t *display_text_mp_language(void);
 static const uint8_t *display_text_user_directory(void);
 static const uint8_t *display_text_player_name(void);
 static const uint8_t *display_text_game_speed(void);
@@ -202,6 +213,8 @@ static int preview_weather_radio_buttons(int selected_key);
 
 // ---------- General ----------------------
 static config_widget page_general[] = {
+    /* Display language first: it was below the fold and players did not find it (2026-11-14). */
+    {TYPE_SELECT, SELECT_MP_LANGUAGE, TR_CONFIG_MP_LANGUAGE, display_text_mp_language, 0, 1, ITEM_BASE_H, 8},
     {TYPE_SELECT, SELECT_USER_DIRECTORY, TR_USER_DIRECTORIES_WINDOW_USER_PATH, display_text_user_directory, 0, 1, ITEM_BASE_H, 8},
     {TYPE_SELECT, SELECT_LANGUAGE, TR_CONFIG_LANGUAGE_LABEL, display_text_language, 0, 1, ITEM_BASE_H, 8},
     {TYPE_SELECT, SELECT_PLAYER_NAME, TR_CONFIG_DEFAULT_PLAYER_NAME, display_text_player_name, 0, 1, ITEM_BASE_H, 8},
@@ -216,6 +229,7 @@ static config_widget page_general[] = {
     {TYPE_NUMERICAL_RANGE, RANGE_MAX_AUTOSAVE_SLOTS, 0, display_text_autosave_slots, 0, 1, ITEM_BASE_H, 2},
     {TYPE_CHECKBOX, CONFIG_GP_CH_YEARLY_AUTOSAVE, TR_BUTTON_YEARLY_AUTOSAVE_ON, NULL, 0, 1, ITEM_BASE_H, CHECKBOX_MARGIN},
 
+    /* Korean font choice removed (2026-11-14, global edition): the game always uses Noto Sans KR. */
     {TYPE_HEADER, 0, TR_CONFIG_VIDEO, NULL, 0, 1, ITEM_BASE_H, 14},
     {TYPE_CHECKBOX, CONFIG_ORIGINAL_FULLSCREEN, TR_CONFIG_FULLSCREEN, NULL, 0, 1, ITEM_BASE_H, CHECKBOX_MARGIN},
     {TYPE_NUMERICAL_DESC, RANGE_RESOLUTION, TR_CONFIG_WINDOWED_RESOLUTION, NULL, 0, 1, ITEM_BASE_H, 10},
@@ -508,12 +522,16 @@ static const unsigned char page_is_category_helper[CONFIG_PAGES] = {
 
 // buttons helpers
 static void button_language_select(const generic_button *button);
+static void button_korean_font_select(const generic_button *button);
+static void button_mp_language_select(const generic_button *button);
 static void button_edit_player_name(const generic_button *button);
 static void button_change_user_directory(const generic_button *button);
 static generic_button select_buttons[] = {
     {225, 0, 200, 24, button_language_select},
     {225, 0, 200, 24, button_edit_player_name},
     {225, 0, 200, 24, button_change_user_directory},
+    {225, 0, 200, 24, button_korean_font_select},
+    {225, 0, 200, 24, button_mp_language_select},
 };
 
 //  Numeric ranges (slider bar geometry + value binding populated in set_range_values()).
@@ -674,12 +692,57 @@ static uint8_t *percentage_string(uint8_t *s, int p)
 
 //    Config get/set action functions (kept, some grouped)
 
+static int korean_font_before_preview;
+static int korean_font_preview_error;
+
+/* Preview changes runtime geometry only; config is committed by Apply/OK. */
+static int preview_display_scale(int percentage)
+{
+    int actual = system_scale_display(percentage);
+    if (actual <= 0) {
+        data.config_values[CONFIG_SCREEN_DISPLAY_SCALE].new_value = platform_screen_get_scale();
+        window_invalidate();
+        return 0;
+    }
+    data.config_values[CONFIG_SCREEN_DISPLAY_SCALE].new_value = actual;
+    window_invalidate();
+    return 1;
+}
+
 static int config_change_basic(int key)
 {
     if (key < CONFIG_MAX_ENTRIES) {
         config_set(key, data.config_values[key].new_value);
     }
     data.config_values[key].original_value = data.config_values[key].new_value;
+    return 1;
+}
+
+static int config_change_korean_font(int key)
+{
+    if (!image_preview_korean_font(data.config_values[key].new_value)) {
+        korean_font_preview_error = 1;
+        window_invalidate();
+        return 0;
+    }
+    korean_font_before_preview = image_get_korean_font();
+    return config_change_basic(key);
+}
+
+/* Display language of the multilingual build: saved and applied at once (core/mp_language.c). */
+static int config_change_mp_language(int key)
+{
+    if (!mp_language_set(data.config_values[key].new_value - 1)) {
+        data.config_values[key].new_value = data.config_values[key].original_value;
+        return 0;
+    }
+    data.config_values[key].original_value = data.config_values[key].new_value;
+    /* Texts this window copied when it opened are copied again in the new language (the "default" entry of the
+       original language list and the volume label stayed in the old language, 2026-11-14). */
+    string_copy(translation_for(TR_CONFIG_LANGUAGE_DEFAULT), data.language_options.data[0], CONFIG_STRING_VALUE_MAX);
+    data.volume_offset = string_copy(translation_for(TR_CONFIG_VOLUME), data.volume_text, 63);
+    data.volume_offset = string_copy(string_from_ascii(" "), data.volume_offset,
+                                     (int) (data.volume_offset - data.volume_text - 1));
     return 1;
 }
 
@@ -730,7 +793,7 @@ static int config_change_display_resolution(int key)
 
 static int config_change_display_scale(int key)
 {
-    data.config_values[key].new_value = system_scale_display(data.config_values[key].new_value);
+    if (!preview_display_scale(data.config_values[key].new_value)) return 0;
     return config_change_basic(key);
 }
 
@@ -999,6 +1062,19 @@ static const uint8_t *display_text_language(void)
     return data.language_options.options[data.language_options.selected];
 }
 
+static uint8_t mp_language_names[MP_LANGUAGE_COUNT][64];
+static const uint8_t *mp_language_option(int index)
+{
+    encoding_from_utf8(mp_language_native_name(index), mp_language_names[index], sizeof(mp_language_names[index]));
+    return mp_language_names[index];
+}
+
+static const uint8_t *display_text_mp_language(void)
+{
+    int value = data.config_values[CONFIG_MP_LANGUAGE].new_value;
+    return mp_language_option(value >= 1 && value <= MP_LANGUAGE_COUNT ? value - 1 : 0);
+}
+
 static const uint8_t *display_text_user_directory(void)
 {
     return translation_for(TR_USER_DIRECTORIES_WINDOW_TITLE);
@@ -1163,6 +1239,9 @@ static void set_custom_config_changes(void)
     for (int i = 0; i < CONFIG_STRING_MAX_ALL; ++i) {
         data.config_string_values[i].change_action = config_change_string_basic;
     }
+
+    data.config_values[CONFIG_KOREAN_FONT].change_action = config_change_korean_font;
+    data.config_values[CONFIG_MP_LANGUAGE].change_action = config_change_mp_language;
 
     //  strings
 
@@ -1362,6 +1441,7 @@ static inline void check_for_changes(void)
         }
     }
     for (int i = 0; i < CONFIG_MAX_ALL && !data.has_changes; i++) {
+        if (room_key_readonly(i))continue;
         if (config_changed(i)) {
             data.has_changes = 1;
         }
@@ -1382,6 +1462,49 @@ static void button_language_select(const generic_button *button)
     int height = button->parameter1;
     window_select_list_show_text(screen_dialog_offset_x(), screen_dialog_offset_y() + height, button,
         data.language_options.options, data.language_options.total, set_language);
+}
+
+static void set_korean_font(int index)
+{
+    index = calc_bound(index, 0, 5);
+    korean_font_preview_error = !image_preview_korean_font(index);
+    if (!korean_font_preview_error) {
+        data.config_values[CONFIG_KOREAN_FONT].new_value = index;
+    }
+    window_invalidate();
+}
+
+/* Only the languages this edition ships (core/mp_language.c): list position -> language index. */
+static int mp_language_listed[MP_LANGUAGE_COUNT];
+
+static void set_mp_language(int index)
+{
+    index = mp_language_listed[calc_bound(index, 0, MP_LANGUAGE_COUNT - 1)];
+    data.config_values[CONFIG_MP_LANGUAGE].new_value = calc_bound(index, 0, MP_LANGUAGE_COUNT - 1) + 1;
+    window_invalidate();
+}
+
+static void button_mp_language_select(const generic_button *button)
+{
+    static const uint8_t *options[MP_LANGUAGE_COUNT];
+    int count = 0;
+    for (int i = 0; i < MP_LANGUAGE_COUNT; ++i) {
+        if (!mp_language_available(i)) continue;
+        mp_language_listed[count] = i;
+        options[count++] = mp_language_option(i);
+    }
+    window_select_list_show_text(screen_dialog_offset_x(), screen_dialog_offset_y() + button->parameter1,
+        button, options, count, set_mp_language);
+}
+
+static void button_korean_font_select(const generic_button *button)
+{
+    static const uint8_t *options[6];
+    for (int i = 0; i < 6; ++i) {
+        options[i] = translation_for(TR_KOREAN_FONT_ORIGINAL + i);
+    }
+    window_select_list_show_text(screen_dialog_offset_x(), screen_dialog_offset_y() + button->parameter1,
+        button, options, 6, set_korean_font);
 }
 
 static void set_player_name(const uint8_t *name)
@@ -1551,6 +1674,7 @@ static void op_draw_fg_checkbox(const config_widget *w, int x, int y, int avail_
 
 static int op_input_checkbox(const config_widget *w, int x, int y, int avail_text_w, const mouse *m, unsigned *focused)
 {
+    if(room_key_readonly(w->subtype))return 0;
     int width = avail_text_w + 30; //  30 includes checkbox + gap
 
     int height = w->height;
@@ -1649,7 +1773,11 @@ static int handle_slider_mouse(const numerical_range_widget *r, const mouse *m, 
         }
         if (!m->left.is_down) {
             data.active_numerical_range = 0;
-            return 0;
+            if (id == RANGE_DISPLAY_SCALE + 1) {
+                preview_display_scale(*r->value);
+            }
+            /* Consume release: its coordinates belong to the previous layout. */
+            return 1;
         }
     } else if (!m->left.went_down || !is_over_slider(r, m, x, y, extra_w)) {
         return 0;
@@ -1698,6 +1826,7 @@ static void op_draw_fg_range(const config_widget *w, int x, int y, int avail_tex
 
 static int op_input_range(const config_widget *w, int x, int y, int avail_text_w, const mouse *m, unsigned *focused)
 {
+    if((room_options_at_open || config_room_active()) && (w->subtype==RANGE_DIFFICULTY || w->subtype==RANGE_MAX_GRAND_TEMPLES))return 0;
     int extra_w = data.layout.has_scrollbar ? 0 : 64;
     // Keep hit-testing aligned with drawing by using x directly.
     (void) focused;
@@ -1739,8 +1868,19 @@ static int  op_input_header(const config_widget *w, int x, int y, int avail_text
 
 //  Ops table
 
+static void op_draw_font_preview(const config_widget *w, int x, int y, int avail_text_w)
+{
+    const uint8_t *sample = translation_for(TR_KOREAN_FONT_PREVIEW_SAMPLE);
+    text_draw_ellipsized(sample, x + 8, y + 4, avail_text_w - 16, FONT_SMALL_PLAIN, COLOR_BLACK);
+    text_draw_ellipsized(sample, x + 8, y + 23, avail_text_w - 16, FONT_NORMAL_PLAIN, COLOR_BLACK);
+    text_draw_ellipsized(sample, x + 8, y + 46, avail_text_w - 16, FONT_LARGE_BLACK, 0);
+    text_draw_multiline(translation_for(korean_font_preview_error ? TR_KOREAN_FONT_LOAD_ERROR :
+        TR_KOREAN_FONT_PREVIEW_HINT), x + 8, y + 73, avail_text_w - 16, 0, FONT_NORMAL_BLACK, 0);
+}
+
 static const widget_ops ops_by_type[] = {
     [TYPE_NONE] = {0},
+    [TYPE_FONT_PREVIEW] = {op_measure_space, op_draw_font_preview, 0, 0},
     [TYPE_SPACE] = {op_measure_space, 0, 0, 0},
     [TYPE_HEADER] = {op_measure_header, op_draw_bg_header, op_draw_fg_header, op_input_header},
     [TYPE_CHECKBOX] = {op_measure_checkbox, op_draw_bg_checkbox, op_draw_fg_checkbox, op_input_checkbox},
@@ -1931,8 +2071,10 @@ static void draw_background(void)
     graphics_in_dialog();
 
     outer_panel_draw(0, 0, 40, 30);
-    text_draw_centered(translation_for(TR_CONFIG_TITLE), 16, 16, 608, FONT_LARGE_BLACK, 0);
+    /* With the room line below it the title moves up, so the two do not overlap (seen 2026-11-13). */
+    text_draw_centered(translation_for(TR_CONFIG_TITLE), 16, config_room_active() ? 6 : 16, 608, FONT_LARGE_BLACK, 0);
 
+    if(config_room_active()){uint8_t label[256];encoding_from_utf8("난이도·도시 관리: 방 공통 설정 (읽기 전용)",label,sizeof(label));text_draw_centered(label,16,35,608,FONT_SMALL_PLAIN,0);}
     //  tabs
 
     int page_x_offset = 30;
@@ -2044,14 +2186,23 @@ static int preview_weather_radio_buttons(int selected_key)
 }
 //    Input
 
-static void cancel_values(void)
+static int cancel_values(void)
 {
+    if (korean_font_before_preview >= 0) {
+        korean_font_preview_error = !image_preview_korean_font(korean_font_before_preview);
+        if (korean_font_preview_error) {
+            window_invalidate();
+            return 0;
+        }
+    }
+    if (!preview_display_scale(data.config_values[CONFIG_SCREEN_DISPLAY_SCALE].original_value)) return 0;
     for (int i = 0; i < CONFIG_MAX_ALL; i++) {
         data.config_values[i].new_value = data.config_values[i].original_value;
     }
     for (int i = 0; i < CONFIG_STRING_MAX_ALL; i++) {
         memcpy(data.config_string_values[i].new_value, data.config_string_values[i].original_value, CONFIG_STRING_VALUE_MAX);
     }
+    return 1;
 }
 
 static int apply_changed_configs(void)
@@ -2060,6 +2211,7 @@ static int apply_changed_configs(void)
         return 1;
     }
     for (int i = 0; i < CONFIG_MAX_ALL; ++i) {
+        if (room_key_readonly(i))continue;
         if (config_changed(i)) {
             if (!data.config_values[i].change_action(i)) {
                 return 0;
@@ -2085,13 +2237,17 @@ static void button_hotkeys(const generic_button *button)
 static void button_reset_defaults(const generic_button *button)
 {
     for (int i = 0; i < CONFIG_MAX_ENTRIES; i++) {
-        data.config_values[i].new_value = config_get_default_value(i);
+        if(!room_key_readonly(i))data.config_values[i].new_value = config_get_default_value(i);
     }
 
     for (int i = 0; i < CONFIG_STRING_MAX_ENTRIES; i++) {
         snprintf(data.config_string_values[i].new_value, CONFIG_STRING_VALUE_MAX, "%s", config_get_default_string_value(i));
     }
     set_language(0);
+    set_korean_font(config_get_default_value(CONFIG_KOREAN_FONT));
+    /* the display language is a choice, not a setting to reset */
+    data.config_values[CONFIG_MP_LANGUAGE].new_value = config_get(CONFIG_MP_LANGUAGE);
+    preview_display_scale(config_get_default_value(CONFIG_SCREEN_DISPLAY_SCALE));
     window_invalidate();
 }
 
@@ -2099,8 +2255,7 @@ static void button_close(const generic_button *button)
 {
     int save = button->parameter1;
     if (!save) {
-        cancel_values();
-        window_go_back();
+        if (cancel_values()) window_go_back();
         return;
     }
     if (apply_changed_configs() && save == 1) {
@@ -2180,7 +2335,7 @@ static void handle_input(const mouse *m, const hotkeys *h)
     handled |= generic_buttons_handle_mouse(md, 0, 0, page_buttons, CONFIG_PAGES, &data.page_focus_button);
 
     if (!handled && (m->right.went_up || h->close_pressed)) {
-        window_go_back();
+        if (cancel_values()) window_go_back();
     }
     if (prev_focus != data.focus_button) {
         window_request_refresh();
@@ -2251,6 +2406,7 @@ static void set_page(unsigned int page)
 static void init(unsigned int page, unsigned int category, int show_background_image)
 {
     memset(&data, 0, sizeof(data));
+    room_options_at_open=config_room_active();
     data.page = page;
     if (page == CONFIG_PAGE_UI_CHANGES) {
         if (category >= CATEGORY_UI_COUNT) {
@@ -2270,6 +2426,9 @@ static void init(unsigned int page, unsigned int category, int show_background_i
     data.volume_offset = string_copy(translation_for(TR_CONFIG_VOLUME), data.volume_text, 63);
     data.volume_offset = string_copy(string_from_ascii(" "), data.volume_offset, (int) (data.volume_offset - data.volume_text - 1));
 
+    korean_font_before_preview = image_get_korean_font();
+    korean_font_preview_error = 0;
+
     //  prime numeric configs from core config
 
     for (int i = 0; i < CONFIG_MAX_ENTRIES; i++) {
@@ -2282,6 +2441,9 @@ static void init(unsigned int page, unsigned int category, int show_background_i
         snprintf(data.config_string_values[i].new_value, CONFIG_STRING_VALUE_MAX, "%s", v);
     }
     fetch_original_config_values();
+    /* A requested scale may have been clamped after resizing the window. */
+    data.config_values[CONFIG_SCREEN_DISPLAY_SCALE].original_value = platform_screen_get_scale();
+    data.config_values[CONFIG_SCREEN_DISPLAY_SCALE].new_value = platform_screen_get_scale();
     set_custom_config_changes();
     set_range_values();
     reset_weather_previews();
@@ -2307,6 +2469,11 @@ static void init(unsigned int page, unsigned int category, int show_background_i
     }
 
     //  system constraints
+
+    /* Korean edition (no other catalog shipped): no display language row at all (user 2026-11-14). */
+    if (mp_language_available_count() <= 1) {
+        disable_widget_globally(TYPE_SELECT, SELECT_MP_LANGUAGE);
+    }
 
     if (!system_can_scale_display(0, 0)) {
         disable_widget_globally(TYPE_HEADER, TR_CONFIG_VIDEO);

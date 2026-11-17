@@ -1,4 +1,6 @@
 #include "file_io.h"
+#include "multiplayer/post_city.h"
+#include "multiplayer/army_live.h"
 
 #include "building/barracks.h"
 #include "building/count.h"
@@ -240,6 +242,8 @@ typedef struct {
     buffer *production_rates;
     buffer *monument_stages;
     buffer *finance_ledger;
+    buffer *mp_post_book;
+    buffer *mp_army_book;
 } savegame_state;
 
 typedef struct {
@@ -756,10 +760,15 @@ static void init_savegame_data(savegame_version_t version)
     if (version > SAVE_GAME_LAST_NO_LEDGER) {
         state->finance_ledger = create_savegame_piece(PIECE_SIZE_DYNAMIC, 0);
     }
+    if (version > SAVE_GAME_LAST_NO_MP_POST_BOOK) {
+        state->mp_post_book = create_savegame_piece(MP_POST_SAVE_BYTES, 0);
+    }
+    if(version > SAVE_GAME_LAST_NO_LIVE_ARMY)state->mp_army_book=create_savegame_piece(MP_ARMY_SAVE_BYTES,0);
 }
 
 static void scenario_load_from_state(scenario_state *file, scenario_version_t version)
 {
+    mp_post_city_reset();
     resource_version_t resource_version = RESOURCE_ORIGINAL_VERSION;
     if (version > SCENARIO_LAST_NO_STATIC_RESOURCES) {
         resource_version = buffer_read_u32(file->resource_version);
@@ -1169,6 +1178,8 @@ static void savegame_save_to_state(savegame_state *state)
     production_rates_save(state->production_rates);
 
     city_finance_ledger_save_state(state->finance_ledger);
+    mp_post_city_save(state->mp_post_book);
+    mp_army_save(state->mp_army_book);
     building_monument_save_stages(state->monument_stages);
 }
 
@@ -1607,7 +1618,7 @@ static int savegame_read_from_buffer(buffer *buf, savegame_version_t version)
             result = buffer_read_raw(buf, piece->buf.data, piece->buf.size) == piece->buf.size;
         }
         // The last piece may be smaller than buf.size
-        if (!result && i != (savegame_data.num_pieces - 1)) {
+        if (!result && (i != (savegame_data.num_pieces - 1) || version > SAVE_GAME_LAST_NO_MP_POST_BOOK)) {
             log_info("Incorrect buffer size, got", 0, (int) result);
             log_info("Incorrect buffer size, expected", 0, (int) piece->buf.size);
             core_memory_block_free(&compress_buffer);
@@ -1634,7 +1645,7 @@ static int savegame_read_from_file(FILE *fp, savegame_version_t version)
             result = fread(piece->buf.data, 1, piece->buf.size, fp) == piece->buf.size;
         }
         // The last piece may be smaller than buf.size
-        if (!result && i != (savegame_data.num_pieces - 1)) {
+        if (!result && (i != (savegame_data.num_pieces - 1) || version > SAVE_GAME_LAST_NO_MP_POST_BOOK)) {
             log_info("Incorrect buffer size, got", 0, result);
             log_info("Incorrect buffer size, expected", 0, (int) piece->buf.size);
             core_memory_block_free(&compress_buffer);
@@ -1723,6 +1734,11 @@ int game_file_io_read_save_game_from_buffer(buffer *buf)
         log_error("Unable to load game, incompatible savefile.", 0, 0);
         return FILE_LOAD_WRONG_FILE_FORMAT;
     }
+    if (!mp_post_city_restore(save_version > SAVE_GAME_LAST_NO_MP_POST_BOOK ? savegame_data.state.mp_post_book : 0)) {
+        clear_savegame_pieces();
+        return FILE_LOAD_WRONG_FILE_FORMAT;
+    }
+    if(!mp_army_restore(save_version > SAVE_GAME_LAST_NO_LIVE_ARMY ? savegame_data.state.mp_army_book : 0)){clear_savegame_pieces();return FILE_LOAD_WRONG_FILE_FORMAT;}
     savegame_load_from_state(&savegame_data.state, save_version);
     clear_savegame_pieces();
     return FILE_LOAD_SUCCESS;
@@ -1758,6 +1774,11 @@ int game_file_io_read_saved_game(const char *filename, int offset)
         log_error("Unable to load game, incompatible savefile.", 0, 0);
         return FILE_LOAD_WRONG_FILE_FORMAT;
     }
+    if (!mp_post_city_restore(save_version > SAVE_GAME_LAST_NO_MP_POST_BOOK ? savegame_data.state.mp_post_book : 0)) {
+        clear_savegame_pieces();
+        return FILE_LOAD_WRONG_FILE_FORMAT;
+    }
+    if(!mp_army_restore(save_version > SAVE_GAME_LAST_NO_LIVE_ARMY ? savegame_data.state.mp_army_book : 0)){clear_savegame_pieces();return FILE_LOAD_WRONG_FILE_FORMAT;}
     savegame_load_from_state(&savegame_data.state, save_version);
     clear_savegame_pieces();
     return 1;
@@ -1978,10 +1999,12 @@ int game_file_io_write_saved_game(const char *filename)
     memory_block compress_buffer;
     core_memory_block_init(&compress_buffer, COMPRESS_BUFFER_INITIAL_SIZE);
     savegame_write_to_file(fp, &compress_buffer);
+    int write_ok = !ferror(fp);
+    if (fflush(fp) != 0) write_ok = 0;
     core_memory_block_free(&compress_buffer);
     clear_savegame_pieces();
-    file_close(fp);
-    return 1;
+    if (!file_close(fp)) write_ok = 0;
+    return write_ok;
 }
 
 int game_file_io_delete_saved_game(const char *filename)
@@ -1992,4 +2015,69 @@ int game_file_io_delete_saved_game(const char *filename)
         log_error("Unable to delete game", 0, 0);
     }
     return result;
+}
+
+/* Render replica transport, separate from saved-game loading. Main-thread capture only.
+ * ACS3 appends the source's render grids. Terrain variants have mutable context
+ * counters; regenerating them for every replica changes otherwise static tiles.
+ * This trailer never enters a normal SAV or authoritative game state. */
+#define VIEW_RENDER_MAGIC 0x474d4952u
+#define VIEW_RENDER_CELLS (GRID_SIZE * GRID_SIZE)
+#define VIEW_RENDER_BYTES (12u + 12u * VIEW_RENDER_CELLS)
+#include "map/image_context.h"
+#include "multiplayer/visit.h"
+unsigned char *game_file_io_capture_view(unsigned *length){
+ if(mp_visit_active())return 0;
+ resource_set_mapping(RESOURCE_CURRENT_VERSION);init_savegame_data(SAVE_GAME_CURRENT_VERSION);
+ savegame_save_to_state(&savegame_data.state);
+ size_t size=16;for(int i=0;i<savegame_data.num_pieces;i++)size+=8+savegame_data.pieces[i].buf.size;
+ size+=VIEW_RENDER_BYTES;
+ if(size>16*1024*1024){clear_savegame_pieces();return 0;}
+ unsigned char *out=malloc(size);if(!out){clear_savegame_pieces();return 0;}
+ uint32_t header[4]={0x33534341,SAVE_GAME_CURRENT_VERSION,RESOURCE_CURRENT_VERSION,savegame_data.num_pieces};memcpy(out,header,16);
+ size_t off=16;for(int i=0;i<savegame_data.num_pieces;i++){
+  file_piece *p=&savegame_data.pieces[i];uint32_t h[2]={(p->compressed?1:0)|(p->dynamic?2:0),p->buf.size};
+  memcpy(out+off,h,8);off+=8;if(p->buf.size)memcpy(out+off,p->buf.data,p->buf.size);off+=p->buf.size;
+ }
+ uint32_t render_header[3]={VIEW_RENDER_MAGIC,VIEW_RENDER_CELLS,3};
+ memcpy(out+off,render_header,12);off+=12;
+ for(int plane=0;plane<3;plane++)for(int i=0;i<VIEW_RENDER_CELLS;i++){
+  uint32_t image=plane==0?map_image_at(i):plane==1?map_marsh_image_at(i):map_beach_image_at(i);
+  memcpy(out+off,&image,4);off+=4;
+ }
+ clear_savegame_pieces();*length=(unsigned)size;return out;
+}
+int game_file_io_apply_view(const unsigned char *data,unsigned length){
+ if(!mp_visit_active() || length<16 || length>16*1024*1024)return 0;
+ uint32_t h[4];memcpy(h,data,16);
+ if((h[0]!=0x32534341 && h[0]!=0x33534341) || h[1]!=SAVE_GAME_CURRENT_VERSION || h[2]!=RESOURCE_CURRENT_VERSION)return 0;
+ init_savegame_data(SAVE_GAME_CURRENT_VERSION);size_t off=16;int ok=h[3]==savegame_data.num_pieces;
+ for(int i=0;ok && i<savegame_data.num_pieces;i++){
+  if(off+8>length){ok=0;break;}uint32_t ph[2];memcpy(ph,data+off,8);off+=8;
+  file_piece *p=&savegame_data.pieces[i];
+  if(ph[0]!=((p->compressed?1:0)|(p->dynamic?2:0)) || ph[1]>length-off || (!p->dynamic && ph[1]!=p->buf.size)){ok=0;break;}
+  if(p->dynamic){void *mem=ph[1]?malloc(ph[1]):0;if(ph[1] && !mem){ok=0;break;}buffer_init(&p->buf,mem,ph[1]);}
+  if(ph[1])memcpy(p->buf.data,data+off,ph[1]);off+=ph[1];
+ }
+ size_t render_offset=off;
+ if(h[0]==0x33534341){
+  uint32_t rh[3];
+  if(length-off!=VIEW_RENDER_BYTES)ok=0;
+  else{memcpy(rh,data+off,12);if(rh[0]!=VIEW_RENDER_MAGIC || rh[1]!=VIEW_RENDER_CELLS || rh[2]!=3)ok=0;}
+ }else if(off!=length)ok=0;
+ if(ok){
+  resource_set_mapping(RESOURCE_CURRENT_VERSION);savegame_load_from_state(&savegame_data.state,SAVE_GAME_CURRENT_VERSION);
+  if(h[0]==0x33534341){
+   off=render_offset+12;
+   for(int plane=0;plane<3;plane++)for(int i=0;i<VIEW_RENDER_CELLS;i++){
+    uint32_t image;memcpy(&image,data+off,4);off+=4;
+    if(plane==0)map_image_set(i,image);else if(plane==1)map_marsh_image_set(i,image);else map_beach_image_set(i,image);
+   }
+  }else{
+   /* Legacy view packets remain readable, with stable context selection. */
+   map_image_context_init();
+   map_image_clear();map_marsh_image_clear();map_beach_image_clear();map_image_update_all();
+  }
+ }
+ clear_savegame_pieces();return ok;
 }

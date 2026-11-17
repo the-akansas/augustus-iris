@@ -1,3 +1,7 @@
+#include "multiplayer/army_seal.h"
+#include "building/tile_repair.h"
+#include "multiplayer/visit.h"
+#include "multiplayer/clock.h"
 #include "file.h"
 
 #include "building/construction.h"
@@ -298,6 +302,8 @@ static void initialize_saved_game(void)
 
     map_routing_update_all();
 
+    building_tile_repair_all(); /* black / undeletable tiles left in older saves (2026-11-14) */
+    mp_army_seal_release(); /* sealed army dispatch: release what an older save still holds of it (2026-11-14) */
     map_orientation_update_buildings();
     figure_route_clean();
     map_road_network_update();
@@ -346,8 +352,8 @@ static int start_scenario(const uint8_t *scenario_name, const char *scenario_fil
         return 0;
     }
     if (!load_custom_scenario(scenario_name, full_scenario_file)) {
-        uint8_t scenario_mapx_name[FILE_NAME_MAX];
-        string_copy(scenario_name, scenario_mapx_name, FILE_NAME_MAX);
+        uint8_t scenario_mapx_name[FILE_PATH_MAX];
+        string_copy(scenario_name, scenario_mapx_name, FILE_PATH_MAX);
         if (game_file_load_saved_game(full_scenario_file) == FILE_LOAD_SUCCESS) {
             is_save_game = 1;
             scenario_set_name(scenario_mapx_name);
@@ -376,16 +382,17 @@ static int start_scenario(const uint8_t *scenario_name, const char *scenario_fil
 
 static const char *get_scenario_filename(const uint8_t *scenario_name, const char *extension, int decomposed)
 {
-    static char filename[FILE_NAME_MAX];
-    encoding_to_utf8(scenario_name, filename, FILE_NAME_MAX, decomposed);
+    static char filename[FILE_PATH_MAX];
+    encoding_to_utf8(scenario_name, filename, FILE_PATH_MAX, decomposed);
     if (!file_has_extension(filename, extension)) {
-        file_append_extension(filename, extension, FILE_NAME_MAX);
+        file_append_extension(filename, extension, FILE_PATH_MAX);
     }
     return filename;
 }
 
 int game_file_start_scenario_from_buffer(uint8_t *data, int length, int is_save_game)
 {
+    if(mp_clock_active())return 0;
     buffer buf;
     buffer_init(&buf, data, length);
     int mission = scenario_campaign_mission();
@@ -448,6 +455,7 @@ int game_file_start_scenario_from_buffer(uint8_t *data, int length, int is_save_
 
 int game_file_start_scenario_by_name(const uint8_t *scenario_name)
 {
+    if(mp_clock_active())return 0;
     if (start_scenario(scenario_name, get_scenario_filename(scenario_name, "map", 0))) {
         return 1;
     }
@@ -462,6 +470,7 @@ int game_file_start_scenario_by_name(const uint8_t *scenario_name)
 
 int game_file_load_saved_game(const char *filename)
 {
+    if(mp_clock_active())return FILE_LOAD_WRONG_FILE_FORMAT;
     game_campaign_suspend();
     int result = game_file_io_read_saved_game(filename, 0);
     if (result != FILE_LOAD_SUCCESS) {
@@ -481,12 +490,13 @@ int game_file_load_saved_game(const char *filename)
 
 int game_file_write_saved_game(const char *filename)
 {
+    if (mp_visit_active()) return 0;
     return game_file_io_write_saved_game(filename);
 }
 
 int game_file_quicksave(void)
 {
-    char name[FILE_NAME_MAX];
+    char name[FILE_PATH_MAX];
     encoding_to_utf8(scenario_name(), name, sizeof(name), encoding_system_uses_decomposed());
     for (char *c = name; *c; c++) {
         if ((unsigned char) *c < 32 || strchr("<>:\"/\\|?* ", *c)) {
@@ -501,17 +511,17 @@ int game_file_quicksave(void)
         return 0;
     }
 
-    char filename[FILE_NAME_MAX];
+    char filename[FILE_PATH_MAX];
     const char *directory = platform_file_manager_get_directory_for_location(PATH_LOCATION_SAVEGAME, 0);
     int length = snprintf(filename, sizeof(filename), "%squicksave-%s-%s.svx", directory, name, timestamp);
-    if (length < 0 || length >= FILE_NAME_MAX) {
+    if (length < 0 || length >= FILE_PATH_MAX) {
         return 0;
     }
     // Repeated presses within the same second must create separate saves.
     for (int suffix = 1; file_exists(filename, NOT_LOCALIZED); suffix++) {
         length = snprintf(filename, sizeof(filename), "%squicksave-%s-%s-%d.svx",
             directory, name, timestamp, suffix);
-        if (length < 0 || length >= FILE_NAME_MAX) {
+        if (length < 0 || length >= FILE_PATH_MAX) {
             return 0;
         }
     }
@@ -537,10 +547,10 @@ int game_file_quickload(void)
         return FILE_LOAD_DOES_NOT_EXIST;
     }
     // Loading may reuse the shared directory listing and path buffers.
-    char filename[FILE_NAME_MAX];
+    char filename[FILE_PATH_MAX];
     int length = snprintf(filename, sizeof(filename), "%s%s",
         platform_file_manager_get_directory_for_location(PATH_LOCATION_SAVEGAME, 0), latest->name);
-    if (length < 0 || length >= FILE_NAME_MAX) {
+    if (length < 0 || length >= FILE_PATH_MAX) {
         return FILE_LOAD_DOES_NOT_EXIST;
     }
     return game_file_load_saved_game(filename);
@@ -553,12 +563,12 @@ int game_file_make_yearly_autosave(void)
         next_autosave_slot = 0;
     }
 
-    char current_save_name[FILE_NAME_MAX];
-    char backup_save_name[FILE_NAME_MAX];
+    char current_save_name[FILE_PATH_MAX];
+    char backup_save_name[FILE_PATH_MAX];
 
-    snprintf(current_save_name, FILE_NAME_MAX, "%s%s",
+    snprintf(current_save_name, FILE_PATH_MAX, "%s%s",
         platform_file_manager_get_directory_for_location(PATH_LOCATION_SAVEGAME, 0), "autosave-year.svx");
-    snprintf(backup_save_name, FILE_NAME_MAX, "%s%s%d%s",
+    snprintf(backup_save_name, FILE_PATH_MAX, "%s%s%d%s",
         platform_file_manager_get_directory_for_location(PATH_LOCATION_SAVEGAME, 0), "autosave-year-bak-",
         next_autosave_slot, ".svx");
 
@@ -583,7 +593,7 @@ void game_file_write_mission_saved_game(void)
         return;
     }
     const char *filename = 0;
-    char localized_filename[FILE_NAME_MAX];
+    char localized_filename[FILE_PATH_MAX];
     if (game_campaign_is_original()) {
         int rank = scenario_campaign_rank();
         if (rank < 0) {
@@ -593,21 +603,21 @@ void game_file_write_mission_saved_game(void)
         }
         filename = MISSION_SAVED_GAMES[rank];
         if (locale_translate_rank_autosaves()) {
-            encoding_to_utf8(lang_get_string(32, rank), localized_filename, FILE_NAME_MAX,
+            encoding_to_utf8(lang_get_string(32, rank), localized_filename, FILE_PATH_MAX,
                 encoding_system_uses_decomposed());
-            strncat(localized_filename, ".svx", FILE_NAME_MAX - strlen(localized_filename) - 1);
+            strncat(localized_filename, ".svx", FILE_PATH_MAX - strlen(localized_filename) - 1);
             filename = localized_filename;
         }
     } else {
-        uint8_t encoded_filename[FILE_NAME_MAX];
-        uint8_t *cursor = string_copy(game_campaign_get_info()->name, encoded_filename, FILE_NAME_MAX);
-        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_NAME_MAX - (cursor - encoded_filename));
+        uint8_t encoded_filename[FILE_PATH_MAX];
+        uint8_t *cursor = string_copy(game_campaign_get_info()->name, encoded_filename, FILE_PATH_MAX);
+        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_PATH_MAX - (cursor - encoded_filename));
         cursor += string_from_int(cursor, scenario_campaign_mission() + 1, 0);
-        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_NAME_MAX - (cursor - encoded_filename));
+        cursor = string_copy(string_from_ascii(" - "), cursor, FILE_PATH_MAX - (cursor - encoded_filename));
         cursor = string_copy(game_campaign_get_scenario(scenario_campaign_mission())->name, cursor,
-            FILE_NAME_MAX - (cursor - encoded_filename));
-        string_copy(string_from_ascii(".svx"), cursor, FILE_NAME_MAX - (cursor - encoded_filename));
-        encoding_to_utf8(encoded_filename, localized_filename, FILE_NAME_MAX, encoding_system_uses_decomposed());
+            FILE_PATH_MAX - (cursor - encoded_filename));
+        string_copy(string_from_ascii(".svx"), cursor, FILE_PATH_MAX - (cursor - encoded_filename));
+        encoding_to_utf8(encoded_filename, localized_filename, FILE_PATH_MAX, encoding_system_uses_decomposed());
         filename = localized_filename;
     }
     if (!dir_get_file_at_location(filename, PATH_LOCATION_SAVEGAME)) {

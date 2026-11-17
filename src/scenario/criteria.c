@@ -1,4 +1,5 @@
 #include "criteria.h"
+#include "multiplayer/clock.h"
 
 #include "scenario/data.h"
 
@@ -23,7 +24,7 @@ int scenario_criteria_get_max_value(scenario_win_condition_type condition)
 
 int scenario_criteria_population_enabled(void)
 {
-    return scenario.win_criteria.population.enabled;
+    return !mp_clock_active() && scenario.win_criteria.population.enabled;
 }
 
 int scenario_criteria_population(void)
@@ -33,7 +34,7 @@ int scenario_criteria_population(void)
 
 int scenario_criteria_culture_enabled(void)
 {
-    return scenario.win_criteria.culture.enabled;
+    return !mp_clock_active() && scenario.win_criteria.culture.enabled;
 }
 
 int scenario_criteria_culture(void)
@@ -43,7 +44,7 @@ int scenario_criteria_culture(void)
 
 int scenario_criteria_prosperity_enabled(void)
 {
-    return scenario.win_criteria.prosperity.enabled;
+    return !mp_clock_active() && scenario.win_criteria.prosperity.enabled;
 }
 
 int scenario_criteria_prosperity(void)
@@ -53,7 +54,7 @@ int scenario_criteria_prosperity(void)
 
 int scenario_criteria_peace_enabled(void)
 {
-    return scenario.win_criteria.peace.enabled;
+    return !mp_clock_active() && scenario.win_criteria.peace.enabled;
 }
 
 int scenario_criteria_peace(void)
@@ -63,7 +64,7 @@ int scenario_criteria_peace(void)
 
 int scenario_criteria_favor_enabled(void)
 {
-    return scenario.win_criteria.favor.enabled;
+    return !mp_clock_active() && scenario.win_criteria.favor.enabled;
 }
 
 int scenario_criteria_favor(void)
@@ -73,7 +74,7 @@ int scenario_criteria_favor(void)
 
 int scenario_criteria_time_limit_enabled(void)
 {
-    return scenario.win_criteria.time_limit.enabled;
+    return !mp_clock_active() && scenario.win_criteria.time_limit.enabled;
 }
 
 int scenario_criteria_time_limit_years(void)
@@ -83,7 +84,7 @@ int scenario_criteria_time_limit_years(void)
 
 int scenario_criteria_survival_enabled(void)
 {
-    return scenario.win_criteria.survival_time.enabled;
+    return !mp_clock_active() && scenario.win_criteria.survival_time.enabled;
 }
 
 int scenario_criteria_survival_years(void)

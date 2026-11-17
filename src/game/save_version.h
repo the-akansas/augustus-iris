@@ -47,7 +47,10 @@ If you are unsure about anything regarding the savegame versioning, please ask o
 
 typedef enum {
 
-    SAVE_GAME_CURRENT_VERSION = 0xc0,
+    /* Experimental local receipt schema; not a release version. */
+    SAVE_GAME_CURRENT_VERSION = 0xc5,
+    SAVE_GAME_LAST_NO_LIVE_ARMY = 0xc3,
+    SAVE_GAME_LAST_NO_MP_POST_BOOK = 0xc2,
 
     SAVE_GAME_LAST_ORIGINAL_LIMITS_VERSION = 0x66,
     SAVE_GAME_LAST_SMALLER_IMAGE_ID_VERSION = 0x76,
@@ -119,7 +122,9 @@ typedef enum {
     SAVE_GAME_LAST_NO_SHALLOWS = 0xbc,
     SAVE_GAME_LAST_NO_OUTSKIRTS = 0xbd,
     SAVE_GAME_LAST_NO_RAW_RELIGION_COVERAGE = 0xbe,
-    SAVE_GAME_LAST_NO_MORE_NATIVE_BUILDINGS = 0xbf
+    SAVE_GAME_LAST_NO_MORE_NATIVE_BUILDINGS = 0xbf,
+    SAVE_GAME_LAST_NO_MP_EXPEDITION = 0xc0,
+    SAVE_GAME_LAST_NO_MP_VISITORS = 0xc1
 } savegame_version_t;
 
 typedef enum {

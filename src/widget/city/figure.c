@@ -1,4 +1,11 @@
 #include "figure.h"
+#include "multiplayer/visit.h"
+#include "multiplayer/route_post.h"
+#include "core/image.h"
+#include "core/image_group.h"
+#include "core/time.h"
+#include <windows.h>
+#include <stdlib.h>
 
 #include "city/view.h"
 #include "figure/formation.h"
@@ -215,7 +222,7 @@ static void tile_progress_to_pixel_offset(int direction, int progress, int *pixe
     *pixel_y = tile_progress_to_pixel_offset_y(direction, progress);
 }
 
-static void adjust_pixel_offset(const figure *f, int *pixel_x, int *pixel_y)
+static void view_pixel_offset(const figure *f,int *ox,int *oy)
 {
     // determining x/y offset on tile
     int x_offset = 0;
@@ -242,6 +249,39 @@ static void adjust_pixel_offset(const figure *f, int *pixel_x, int *pixel_y)
         }
     }
 
+    *ox=x_offset;*oy=y_offset;
+}
+/* A delayed presentation timeline. The world stays at A while walkers move
+ * towards known positions in B. No extrapolation and no simulation mutation. */
+struct view_target {unsigned generation;int type,state,x,y;};
+static struct view_target *view_targets;
+static unsigned view_target_count,view_target_capacity;
+static int view_target_orientation;
+static ULONGLONG view_start,view_end;
+void city_figure_view_clear_next(void){view_target_count=0;}
+void city_figure_view_capture_next(ULONGLONG start,ULONGLONG end){
+ unsigned count=figure_count();view_target_count=0;
+ if(count>100000 || end<=start)return;
+ if(count>view_target_capacity){void *p=realloc(view_targets,count*sizeof(*view_targets));if(!p)return;view_targets=p;view_target_capacity=count;}
+ view_start=start;view_end=end;view_target_orientation=city_view_orientation();
+ for(unsigned i=0;i<count;i++){
+  const figure *f=figure_get(i);int ox,oy,x,y;view_pixel_offset(f,&ox,&oy);
+  tile_cross_country_offset_to_pixel_offset(f->x*15,f->y*15,&x,&y);
+  view_targets[i]=(struct view_target){f->created_sequence,f->type,f->state,x+ox,y+oy};
+ }view_target_count=count;
+}
+static void view_interpolate(const figure *f,int ox,int oy,int *x,int *y){
+ if(!mp_visit_active() || f->id>=view_target_count || city_view_orientation()!=view_target_orientation)return;
+ const struct view_target *to=&view_targets[f->id];
+ if(to->generation!=f->created_sequence || to->type!=f->type || to->state!=f->state)return;
+ int wx,wy;tile_cross_country_offset_to_pixel_offset(f->x*15,f->y*15,&wx,&wy);wx+=ox;wy+=oy;
+ if(abs(to->x-wx)>240 || abs(to->y-wy)>120)return;
+ ULONGLONG now=GetTickCount64();double t=now<=view_start?0:now>=view_end?1:(double)(now-view_start)/(view_end-view_start);
+ *x+=(int)((to->x-wx)*t);*y+=(int)((to->y-wy)*t);
+}
+static void adjust_pixel_offset(const figure *f,int *pixel_x,int *pixel_y){
+ int x_offset,y_offset;view_pixel_offset(f,&x_offset,&y_offset);
+    view_interpolate(f,x_offset,y_offset,pixel_x,pixel_y);
     x_offset += 29;
     y_offset += 15;
 
@@ -257,6 +297,38 @@ static void adjust_pixel_offset(const figure *f, int *pixel_x, int *pixel_y)
     const image *img = f->is_enemy_image ? image_get_enemy(f->image_id) : image_get(f->image_id);
     *pixel_x += x_offset - (img->animation ? img->animation->sprite_offset_x : 0);
     *pixel_y += y_offset - (img->animation ? img->animation->sprite_offset_y : 0);
+}
+
+/* The original legion standard (pole + waving flag) carried by a visitor's
+ * lead soldier; only the flag cloth takes the owner's colour. */
+static void draw_carried_standard(const figure *f, int x, int y, float scale, color_t player)
+{
+    const image *img = image_get(f->image_id);
+    int pole_id = image_group(GROUP_FIGURE_FORT_STANDARD_POLE);
+    int flag_id = image_group(GROUP_FIGURE_FORT_FLAGS) + (int) ((time_get_millis() / 120) % 8);
+    const image *pole = image_get(pole_id);
+    int px = x + img->width / 2 - pole->width / 2 - 30; /* pole in the soldier's hand */
+    int py = y + img->height - pole->height - 2;
+    image_draw(pole_id, px, py, COLOR_MASK_NONE, scale);
+    mp_draw_player_tint(flag_id, px, py - image_get(flag_id)->height, player, COLOR_MASK_NONE, scale);
+}
+
+/* A legion visiting from another player is marked by its standard in that
+ * player's colour, like the legion standards at home. */
+static void draw_visitor_pennant(const figure *f, int x, int y, float scale)
+{
+    if (!f->formation_id || f->index_in_formation != 0 || f->formation_id >= (unsigned) formation_count()) {
+        return;
+    }
+    const formation *m = formation_get(f->formation_id);
+    if (!m->in_use || !m->mp_expedition_id || (m->mp_expedition_role != 1 && m->mp_expedition_role != 2)) {
+        return;
+    }
+    color_t player = mp_army_token_color(m->mp_expedition_id);
+    if (!player) {
+        return;
+    }
+    draw_carried_standard(f, x, y, scale, player);
 }
 
 static void draw_figure(const figure *f, int x, int y, float scale, int highlight)
@@ -296,6 +368,7 @@ static void draw_figure(const figure *f, int x, int y, float scale, int highligh
             image_draw(f->image_id, x, y, color_mask, scale);
         }
     }
+    draw_visitor_pennant(f, x, y, scale);
 }
 
 void city_draw_figure(const figure *f, int x, int y, float scale, int highlight)

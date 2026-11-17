@@ -17,6 +17,8 @@
  */
 
 #define FILE_NAME_MAX 300
+/* Filesystem paths are separate from serialized campaign-name fields. */
+#define FILE_PATH_MAX 4096
 
 /**
  * Wrapper for fopen converting filename to path in current working directory

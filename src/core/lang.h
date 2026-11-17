@@ -85,6 +85,9 @@ int lang_dir_is_valid(const char *dir);
  * @return boolean true on success, false on failure
  */
 int lang_load(int is_editor);
+
+/* 1 when the player's own converted Caesar III texts (c3-own.eng) were loaded instead of the Korean ones. */
+int lang_own_files_loaded(void);
 void load_augustus_messages(void);
 
 /**

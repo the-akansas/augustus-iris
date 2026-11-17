@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!DOCTYPE assetlist>
+<!-- Multiplayer (Claude 25): player-colour cloth of flags, brightness only. The game multiplies each by the
+     player colour and draws it over the original frame. Made from masks in assets-wip/02 (cloth only). -->
+<assetlist name="MP_Flags">
+    <image id="E174_1" src="E174_1" width="19" height="12"/>
+    <image id="E174_2" src="E174_2" width="19" height="12"/>
+    <image id="E174_3" src="E174_3" width="18" height="12"/>
+    <image id="E174_4" src="E174_4" width="19" height="12"/>
+    <image id="E174_5" src="E174_5" width="18" height="12"/>
+    <image id="E174_6" src="E174_6" width="18" height="12"/>
+    <image id="E175_1" src="E175_1" width="19" height="12"/>
+    <image id="E175_2" src="E175_2" width="19" height="12"/>
+    <image id="E175_3" src="E175_3" width="18" height="12"/>
+    <image id="E175_4" src="E175_4" width="19" height="12"/>
+    <image id="E175_5" src="E175_5" width="18" height="12"/>
+    <image id="E175_6" src="E175_6" width="18" height="12"/>
+    <image id="E176_1" src="E176_1" width="19" height="12"/>
+    <image id="E176_2" src="E176_2" width="19" height="12"/>
+    <image id="E176_3" src="E176_3" width="18" height="12"/>
+    <image id="E176_4" src="E176_4" width="19" height="12"/>
+    <image id="E176_5" src="E176_5" width="18" height="12"/>
+    <image id="E176_6" src="E176_6" width="18" height="12"/>
+    <image id="E223_1" src="E223_1" width="19" height="12"/>
+    <image id="E223_2" src="E223_2" width="19" height="12"/>
+    <image id="E223_3" src="E223_3" width="18" height="12"/>
+    <image id="E223_4" src="E223_4" width="19" height="12"/>
+    <image id="E223_5" src="E223_5" width="18" height="12"/>
+    <image id="E223_6" src="E223_6" width="18" height="12"/>
+    <image id="P_1" src="P_1" width="21" height="24"/>
+    <image id="P_2" src="P_2" width="21" height="24"/>
+    <image id="P_3" src="P_3" width="21" height="24"/>
+    <image id="P_4" src="P_4" width="21" height="24"/>
+    <image id="P_5" src="P_5" width="21" height="24"/>
+    <image id="P_6" src="P_6" width="21" height="24"/>
+    <image id="P_7" src="P_7" width="21" height="24"/>
+    <image id="P_8" src="P_8" width="21" height="24"/>
+    <image id="S_0" src="S_0" width="32" height="29"/>
+    <image id="S_1" src="S_1" width="32" height="29"/>
+    <image id="S_2" src="S_2" width="32" height="29"/>
+    <image id="S_3" src="S_3" width="32" height="29"/>
+    <image id="S_4" src="S_4" width="32" height="29"/>
+    <image id="S_5" src="S_5" width="32" height="29"/>
+    <image id="S_6" src="S_6" width="32" height="29"/>
+    <image id="S_7" src="S_7" width="32" height="29"/>
+    <image id="S_8" src="S_8" width="32" height="29"/>
+    <image id="S_9" src="S_9" width="32" height="29"/>
+    <image id="S_10" src="S_10" width="32" height="29"/>
+    <image id="S_11" src="S_11" width="32" height="29"/>
+    <image id="S_12" src="S_12" width="32" height="29"/>
+    <image id="S_13" src="S_13" width="32" height="29"/>
+    <image id="S_14" src="S_14" width="32" height="29"/>
+    <image id="S_15" src="S_15" width="32" height="29"/>
+    <image id="S_16" src="S_16" width="32" height="29"/>
+    <image id="S_17" src="S_17" width="32" height="29"/>
+    <image id="S_18" src="S_18" width="32" height="29"/>
+    <image id="S_19" src="S_19" width="32" height="29"/>
+    <image id="S_20" src="S_20" width="32" height="29"/>
+    <image id="S_21" src="S_21" width="32" height="29"/>
+    <image id="S_22" src="S_22" width="32" height="29"/>
+    <image id="S_23" src="S_23" width="32" height="29"/>
+    <image id="S_24" src="S_24" width="32" height="29"/>
+    <image id="S_25" src="S_25" width="32" height="29"/>
+    <image id="S_26" src="S_26" width="32" height="29"/>
+</assetlist>

@@ -13,6 +13,7 @@ typedef enum {
     ATLAS_CUSTOM,
     ATLAS_MAIN_AUX,
     ATLAS_EXTERNAL,
+    ATLAS_FONT_ALTERNATE, // Transactional live font replacement
     ATLAS_MAX
 } atlas_type;
 
@@ -25,6 +26,7 @@ typedef enum {
     CUSTOM_IMAGE_RED_FOOTPRINT,
     CUSTOM_IMAGE_GREEN_FOOTPRINT,
     CUSTOM_IMAGE_CLOUDS,
+    CUSTOM_IMAGE_CITY_VISIT,
     CUSTOM_IMAGE_MAX
 } custom_image_type;
 
@@ -95,6 +97,13 @@ typedef struct {
     int (*should_pack_image)(int width, int height);
 
     void (*update_scale)(int city_scale);
+
+    /* Optional logical-resolution city pass; UI retains its output density. */
+    void (*begin_city_layer)(void);
+    void (*end_city_layer)(void);
+    int (*begin_panel_layer)(int x, int y, int width, int height);
+    void (*end_panel_layer)(void);
+    int (*begin_border_layer)(int x, int y, int width, int height);
 } graphics_renderer_interface;
 
 const graphics_renderer_interface *graphics_renderer(void);

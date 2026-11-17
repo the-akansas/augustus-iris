@@ -203,8 +203,10 @@ static auto_cycle_group selected_auto_cycle_group(void)
 static int produced_resource_icon(building_type type)
 {
     resource_type r = resource_get_from_industry(type);
-    if (r != RESOURCE_NONE) {
-        return resource_get_data(r)->image.icon;
+    if (r != RESOURCE_NONE && r != RESOURCE_TROOPS) {
+        int id = resource_get_data(r)->image.icon;
+        const image *img = id > 0 ? image_get(id) : 0;
+        return img && img->original.width > 0 && img->original.height > 0 ? id : -1;
     }
     return -1;
 }
@@ -265,12 +267,10 @@ static void draw_menu_buttons(void)
 
         // Draw resource icon if this building produces a resource
         int resource_icon = produced_resource_icon(type);
-        int text_offset = MENU_TEXT_X_OFFSET;
         if (resource_icon >= 0 && config_get(CONFIG_UI_CV_BUILD_MENU_ICONS)) {
             draw_resource_icon_scaled(resource_icon, item_x_align + MENU_TEXT_X_OFFSET + 2 +
                 (building_monument_type_is_monument(type) + building_rotation_type_has_rotations(type)) * MENU_ICON_WIDTH,
                 data.y_offset + MENU_Y_OFFSET + MENU_ITEM_HEIGHT * i);
-            text_offset += MENU_RESOURCE_ICON_SIZE + 4; // Shift text right to make room for icon + padding
         }
 
         const uint8_t *menu_name = lang_get_string(28, type);
@@ -289,8 +289,8 @@ static void draw_menu_buttons(void)
             text_draw_build_menu_with_index(menu_name, menu_index % 10, item_x_align + MENU_TEXT_X_OFFSET,
                 data.y_offset + MENU_Y_OFFSET + 4 + MENU_ITEM_HEIGHT * i, MENU_ITEM_WIDTH, FONT_NORMAL_GREEN, 0);
         } else {
-            text_draw_centered(menu_name, item_x_align + text_offset, data.y_offset + MENU_Y_OFFSET + 4 + MENU_ITEM_HEIGHT * i,
-                MENU_ITEM_WIDTH - (text_offset - MENU_TEXT_X_OFFSET), FONT_NORMAL_GREEN, 0);
+            text_draw_centered(menu_name, item_x_align + MENU_TEXT_X_OFFSET, data.y_offset + MENU_Y_OFFSET + 4 + MENU_ITEM_HEIGHT * i,
+                MENU_ITEM_WIDTH, FONT_NORMAL_GREEN, 0);
         }
 
         if (type == BUILDING_DRAGGABLE_RESERVOIR) {

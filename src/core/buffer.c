@@ -179,7 +179,8 @@ int buffer_at_end(buffer *buf)
 void buffer_init_dynamic(buffer *buf, size_t size)
 {
     size += sizeof(uint32_t); // Add space for the buffer size
-    uint8_t *buf_data = malloc(size);
+    /* Reserved/skipped dynamic records must not expose allocator contents. */
+    uint8_t *buf_data = calloc(size, 1);
     buffer_init(buf, buf_data, size);
     buffer_write_u32(buf, (uint32_t) size);
 }

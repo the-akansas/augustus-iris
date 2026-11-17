@@ -187,11 +187,11 @@ void assets_init(int force_reload, color_t **main_images, int *main_image_widths
     data.asset_lookup[ASSET_UI_SCROLLBAR_RIGHT_02] = assets_get_image_id("UI", "Scrollbar_Right_02");
     data.asset_lookup[ASSET_UI_SCROLLBAR_RIGHT_03] = assets_get_image_id("UI", "Scrollbar_Right_03");
     data.asset_lookup[ASSET_UI_SCROLLBAR_RIGHT_04] = assets_get_image_id("UI", "Scrollbar_Right_04");
-    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_01] = assets_get_image_id("UI", "Scrollbar_Thumb_01");
-    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_02] = assets_get_image_id("UI", "Scrollbar_Thumb_02");
-    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_03] = assets_get_image_id("UI", "Scrollbar_Thumb_03");
-    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_04] = assets_get_image_id("UI", "Scrollbar_Thumb_04");
-    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_LINES] = assets_get_image_id("UI", "Scrollbar_Thumb_Lines");
+    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_01] = assets_get_image_id("UI", "Scrollbar_mini_thumb_01");
+    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_02] = assets_get_image_id("UI", "Scrollbar_mini_thumb_02");
+    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_03] = assets_get_image_id("UI", "Scrollbar_mini_thumb_03");
+    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_04] = assets_get_image_id("UI", "Scrollbar_mini_thumb_04");
+    data.asset_lookup[ASSET_UI_SCROLLBAR_MINI_THUMB_LINES] = assets_get_image_id("UI", "Scrollbar_mini_thumb_lines");
     data.asset_lookup[ASSET_UI_HOURGLASS_ICON] = assets_get_image_id("UI", "hourglass_icon");
     data.asset_lookup[ASSET_UI_CONSUMED] = assets_get_image_id("UI", "consumed");
     data.asset_lookup[ASSET_UI_CONSUMED_ALPHA] = assets_get_image_id("UI", "consumed_alpha");

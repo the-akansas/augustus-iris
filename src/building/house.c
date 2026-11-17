@@ -42,6 +42,7 @@ static struct {
 
 void building_house_change_to(building *house, building_type type)
 {
+    game_undo_prepare_world_change();
     building_change_type(house, type);
     house->subtype.house_level = house->type - BUILDING_HOUSE_VACANT_LOT;
     map_building_tiles_add(house->id, house->x, house->y, house->size, building_image_get(house), TERRAIN_BUILDING);
@@ -66,11 +67,11 @@ void building_house_vacant_lot_mark_draw(int building_id)
 
 void building_house_change_to_vacant_lot(building *house)
 {
+    game_undo_prepare_world_change();
     house->house_population = 0;
     building_change_type(house, BUILDING_HOUSE_VACANT_LOT);
     house->subtype.house_level = house->type - BUILDING_HOUSE_VACANT_LOT;
     if (house->house_is_merged) {
-        game_undo_disable();
         map_building_tiles_remove(house->id, house->x, house->y);
         house->house_is_merged = 0;
         house->size = house->house_size = 1;
@@ -166,7 +167,7 @@ void building_house_merge(building *house)
         }
     }
     if (num_house_tiles == 4) {
-        game_undo_disable();
+        game_undo_prepare_world_change();
         merge_data.x = house->x + EXPAND_DIRECTION_DELTA[0].x;
         merge_data.y = house->y + EXPAND_DIRECTION_DELTA[0].y;
         merge(house);
@@ -392,6 +393,7 @@ static void split(building *house, int num_tiles)
 
 void building_house_expand_to_large_insula(building *house)
 {
+    game_undo_prepare_world_change();
     split(house, 4);
     prepare_for_merge(house->id, 4);
 
@@ -412,6 +414,7 @@ void building_house_expand_to_large_insula(building *house)
 
 void building_house_expand_to_large_villa(building *house)
 {
+    game_undo_prepare_world_change();
     split(house, 9);
     prepare_for_merge(house->id, 9);
 
@@ -432,6 +435,7 @@ void building_house_expand_to_large_villa(building *house)
 
 void building_house_expand_to_large_palace(building *house)
 {
+    game_undo_prepare_world_change();
     split(house, 16);
     prepare_for_merge(house->id, 16);
 
@@ -452,6 +456,7 @@ void building_house_expand_to_large_palace(building *house)
 
 void building_house_devolve_from_large_insula(building *house)
 {
+    game_undo_prepare_world_change();
     // Only split the house if it can't be kept merged
     if (!config_get(CONFIG_GP_CH_ALL_HOUSES_MERGE) && (map_random_get(house->grid_offset) & 7) >= 5) {
         split_size2(house, BUILDING_HOUSE_MEDIUM_INSULA);
@@ -492,6 +497,7 @@ static int find_best_corner_for_devolve(int x, int y, int old_size, int new_size
 
 void building_house_desize_patrician(building *house)
 {
+    game_undo_prepare_world_change();
     //no need to split inventory since we're keeping everything in main building
     map_building_tiles_remove(house->id, house->x, house->y); // remove all old tiles
     int road_tile_offset = find_best_corner_for_devolve(house->x, house->y, house->size, house->size - 1);
@@ -514,6 +520,7 @@ void building_house_desize_patrician(building *house)
 
 void building_house_devolve_from_large_villa(building *house)
 {
+    game_undo_prepare_world_change();
     int inventory_per_tile[RESOURCE_MAX];
     int inventory_remainder[RESOURCE_MAX];
     for (int i = 0; i < RESOURCE_MAX; i++) {
@@ -555,6 +562,7 @@ void building_house_devolve_from_large_villa(building *house)
 
 void building_house_devolve_from_large_palace(building *house)
 {
+    game_undo_prepare_world_change();
     int inventory_per_tile[RESOURCE_MAX];
     int inventory_remainder[RESOURCE_MAX];
     for (int i = 0; i < RESOURCE_MAX; i++) {

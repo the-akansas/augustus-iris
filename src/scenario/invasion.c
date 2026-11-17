@@ -5,6 +5,7 @@
 #include "city/emperor.h"
 #include "city/message.h"
 #include "core/calc.h"
+#include "core/image.h"
 #include "core/log.h"
 #include "core/random.h"
 #include "empire/object.h"
@@ -694,6 +695,36 @@ void scenario_invasion_start_from_cheat(void)
     }
 }
 
+/* Multiplayer (2026-11-15): one city may be attacked by several peoples. The game holds the pictures of one people at
+ * a time (image_load_enemy), so when a different people comes, the soldiers of the earlier one still on the map leave
+ * it first (they would be drawn with the wrong pictures), then the new people's pictures are loaded. scenario.enemy_id
+ * is saved with the city, so a reloaded save shows the right people. Visiting player armies, the emperor's legions and
+ * rebels use other pictures and are left alone. */
+/* The picture file of each people (the same table as core/image.c ENEMY_GRAPHICS_*): peoples that share a file look
+ * the same, and barbarians use other pictures of the goths' file, so their soldiers can stay on the map together. */
+static const char ENEMY_PICTURE_FILE[20] = {0, 1, 1, 2, 3, 3, 4, 5, 6, 7, 7, 7, 8, 8, 0, 0, 0, 6, 9, 6};
+
+static void switch_enemy_people(int enemy_id)
+{
+    if (enemy_id < 0 || enemy_id >= 20 || enemy_id == scenario.enemy_id) {
+        return;
+    }
+    int same_pictures = scenario.enemy_id >= 0 && scenario.enemy_id < 20 &&
+        ENEMY_PICTURE_FILE[scenario.enemy_id] == ENEMY_PICTURE_FILE[enemy_id];
+    for (unsigned int i = 1; !same_pictures && i < figure_count(); i++) {
+        figure *f = figure_get(i);
+        if (!f->state) {
+            continue;
+        }
+        if (((f->type >= FIGURE_ENEMY43_SPEAR && f->type <= FIGURE_ENEMY53_AXE) || f->type == FIGURE_ENEMY_CATAPULT) &&
+            !formation_get(f->formation_id)->mp_expedition_role) {
+            figure_delete(f);
+        }
+    }
+    scenario.enemy_id = enemy_id;
+    image_load_enemy(enemy_id);
+}
+
 void scenario_invasion_start_from_action(invasion_type_enum invasion_type, int size, int invasion_point,
     formation_attack_enum attack_type, enemy_type_t enemy_id)
 {
@@ -714,6 +745,7 @@ void scenario_invasion_start_from_action(invasion_type_enum invasion_type, int s
             if (enemy_id <= ENEMY_UNDEFINED) {
                 enemy_id = scenario.enemy_id;
             }
+            switch_enemy_people(enemy_id);
             enemy_army_clear(data.last_action_army_id);
             int grid_offset = start_invasion(ENEMY_ID_TO_ENEMY_TYPE[enemy_id], size,
                 invasion_point, attack_type, data.last_action_army_id);

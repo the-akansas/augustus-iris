@@ -117,8 +117,14 @@ int city_ratings_peace_num_rioters(void)
     return city_data.ratings.peace_num_rioters;
 }
 
+static int authored_fixed_favor(void)
+{
+    return scenario_is_custom() && scenario_reset_favor_monthly() == 2;
+}
+
 void city_ratings_change_favor(int amount)
 {
+    if (authored_fixed_favor()) { city_data.ratings.favor = scenario_starting_favor(); return; }
     city_data.ratings.favor = calc_bound(city_data.ratings.favor + amount, 0, 100);
 }
 
@@ -248,6 +254,7 @@ void city_ratings_set_prosperity(int value)
 
 void city_ratings_reset_favor_emperor_change(void)
 {
+    if (authored_fixed_favor()) { city_data.ratings.favor = scenario_starting_favor(); return; }
     city_data.ratings.favor = 50;
 }
 
@@ -259,6 +266,7 @@ void city_ratings_reduce_favor_missed_request(int penalty)
 
 void city_ratings_limit_favor(int max_favor)
 {
+    if (authored_fixed_favor()) { city_data.ratings.favor = scenario_starting_favor(); return; }
     if (city_data.ratings.favor > max_favor) {
         city_data.ratings.favor = max_favor;
     }
@@ -299,6 +307,11 @@ static void update_culture_explanation(void)
 
 void city_ratings_update_favor_explanation(void)
 {
+    if (authored_fixed_favor()) {
+        city_data.ratings.favor_salary_penalty = 0;
+        city_data.ratings.favor_explanation = 13;
+        return;
+    }
     city_data.ratings.favor_salary_penalty = 0;
     int salary_delta = city_data.emperor.salary_rank - city_data.emperor.player_rank;
     if (city_data.emperor.player_rank != 0) {
@@ -550,7 +563,13 @@ static void update_peace_rating(void)
 
 static void update_favor_rating(int is_yearly_update, int is_monthly_update)
 {
-    if (scenario_is_open_play() && scenario_reset_favor_monthly()) {
+    if (authored_fixed_favor()) {
+        city_data.ratings.favor = scenario_starting_favor();
+        city_data.ratings.favor_last_year = city_data.ratings.favor;
+        city_data.ratings.favor_change = 1;
+        return;
+    }
+    if (scenario_is_open_play() && scenario_reset_favor_monthly() == 1) {
         city_data.ratings.favor = 50;
         return;
     }

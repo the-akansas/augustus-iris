@@ -1107,8 +1107,12 @@ static void set_quota(int value)
 static void handle_input(const mouse *m, const hotkeys *h)
 {
     pixel_offset position;
+    int middle_drag = scroll_handle_middle_mouse(m, !is_outside_map(m->x, m->y));
     if (scroll_get_delta(m, &position, SCROLL_TYPE_EMPIRE)) {
         empire_scroll_map(position.x, position.y);
+    }
+    if (middle_drag) {
+        return;
     }
     if (h->toggle_editor_battle_info) {
         data.show_battle_objects = !data.show_battle_objects;

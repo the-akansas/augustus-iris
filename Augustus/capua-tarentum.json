@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "id": "capua-tarentum",
+  "revision": 4,
+  "status": "shared-empire-local-prototype",
+  "source_commit": "63813587869eda5557fe5f1e0e8cea024ff8bef7",
+  "start_year": -350,
+  "players": 2,
+  "difficulty": 2,
+  "dependencies": {
+    "mission1.pak": "cd2eb56c4952ebb7720875107fd372829051fbbb402294f17964144e032463b6",
+    "c3.emp": "99dd66cd618633859d29eda555c140e3f1b17022e8e808a9bcf3e8f7886ad87b",
+    "c3_model.txt": "12efb528939dc15e961880e45fc4e1be184c3211f0653d0cd9f13105232f242e"
+  },
+  "cities": {
+    "capua": {
+      "campaign_scenario": 2,
+      "name_id": 2,
+      "peer_name_id": 1
+    },
+    "tarentum": {
+      "campaign_scenario": 3,
+      "name_id": 1,
+      "peer_name_id": 2
+    }
+  },
+  "implemented_trade": [
+    "timber",
+    "iron",
+    "marble",
+    "pottery",
+    "furniture",
+    "oil",
+    "wine",
+    "weapons",
+    "money-gift"
+  ],
+  "starting_conditions": "preserve-original",
+  "test_stock": "separate-fixtures-only",
+  "live_simulation": true,
+  "peer_ai_trade": "reserved-player-city-type-7",
+  "pending": [
+    "shared-victory-rules",
+    "remote-connections",
+    "food-player-trade",
+    "trade-accounting",
+    "animated-player-delivery"
+  ],
+  "multiplayer_time_origin": "scenario start year, month 0, day 0, tick 0; fresh starts only",
+  "shared_empire": {
+    "revision": 1,
+    "template": 25,
+    "npc_city_ids": [
+      3,
+      10,
+      4,
+      6,
+      13
+    ],
+    "local_production": "preserve-original",
+    "npc_route_opening": "per-player",
+    "npc_annual_limit": 25
+  }
+}

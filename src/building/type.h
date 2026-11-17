@@ -230,7 +230,8 @@ typedef enum {
     BUILDING_NATIVE_LARGE_HUT_ALT_2 = 216,
     BUILDING_NATIVE_PALISADE = 217,
     // helper constants
-    BUILDING_TYPE_MAX = 218
+    BUILDING_PLAYER_TRADE_POST = 218,
+    BUILDING_TYPE_MAX = 219
 } building_type;
 
 /* When adding a new building increment BUILDING_TYPE_MAX

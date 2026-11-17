@@ -32,9 +32,9 @@ static translation_string all_strings[] = {
     {TR_CONFIG_YOU_WILL_LOSE_YOUR_HOTKEYS, "Perderás todos tus atajos personalizados."},
     {TR_CONFIG_TITLE, "Opciones de configuración de Augustus"},
     {TR_CONFIG_HEADER_GENERAL, "Configuraciones generales"},
-    {TR_CONFIG_HEADER_UI_CHANGES, "Interfaz de usuario"},
+    {TR_CONFIG_HEADER_UI_CHANGES, "Interfaz"},
     {TR_CONFIG_HEADER_GAMEPLAY_CHANGES, "Dificultad"},
-    {TR_CONFIG_HEADER_CITY_MANAGEMENT_CHANGES, "Gestión de la ciudad"},
+    {TR_CONFIG_HEADER_CITY_MANAGEMENT_CHANGES, "Gestión"},
     {TR_CONFIG_LANGUAGE_LABEL, "Idioma:"},
     {TR_CONFIG_LANGUAGE_DEFAULT, "(Por defecto)"},
     {TR_CONFIG_DEFAULT_PLAYER_NAME, "Nombre de jugador predeterminado:"},
@@ -1472,13 +1472,13 @@ static translation_string all_strings[] = {
     {TR_USER_DIRECTORIES_NOT_WRITEABLE_TITLE, "Directorio de usuario no modificable"},
     {TR_USER_DIRECTORIES_NOT_WRITEABLE_TEXT, "No se puede escribir en el directorio de usuario seleccionado.\n\nSeleccione otro directorio de usuario."},
     {TR_USER_DIRECTORIES_NOT_WRITEABLE_TEXT_DETAILED, "No se puede escribir en el directorio de usuario seleccionado.\n\nNo podrás guardar tus partidas.\nSeleccione otro directorio de usuario en la ventana de opciones del menú principal."},
-    {TR_USER_DIRECTORIES_WINDOW_TITLE, "Establecer directorio de usuario"},
+    {TR_USER_DIRECTORIES_WINDOW_TITLE, "Directorio de usuario"},
     {TR_USER_DIRECTORIES_WINDOW_USER_PATH, "Directorio de usuario:" },
     {TR_USER_DIRECTORIES_USER_PATH_CHANGED_TITLE, "Ruta de usuario modificada"},
     {TR_USER_DIRECTORIES_USER_PATH_CHANGED_TEXT, "La ruta de usuario se ha modificado correctamente.\n¿Quieres copiar tus archivos?"},
     {TR_USER_DIRECTORIES_USER_PATH_CHANGED_OVERWRITE, "Sobrescribir archivos existentes"},
-    {TR_FIGURE_TYPE_ARMORY_CARTPUSHER, "Repartidor de armería"}
-
+    {TR_FIGURE_TYPE_ARMORY_CARTPUSHER, "Repartidor de armería"},
+    {TR_CONFIG_MP_LANGUAGE, "Idioma de la interfaz"},
 };
 
 void translation_spanish(const translation_string **strings, int *num_strings)

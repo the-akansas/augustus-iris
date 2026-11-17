@@ -108,8 +108,8 @@ void city_health_dispatch_sickness(figure *f)
             dest_b->sickness_level = b->sickness_level;
         }
     } else if (is_plague_building(b->type) && dest_b->sickness_level && dest_b->sickness_level > b->sickness_level) {
-        int value = b->sickness_level <= SICKNESS_SPREAD_DIVISION_FACTOR ? 1 :
-            b->sickness_level / SICKNESS_SPREAD_DIVISION_FACTOR;
+        int value = dest_b->sickness_level <= SICKNESS_SPREAD_DIVISION_FACTOR ? 1 :
+            dest_b->sickness_level / SICKNESS_SPREAD_DIVISION_FACTOR;
         b->sickness_level += value;
         if (b->sickness_level > dest_b->sickness_level) {
             b->sickness_level = dest_b->sickness_level;
@@ -127,7 +127,8 @@ static int cause_disease(void)
         building *next_of_type = 0; // building_destroy_by_plague changes the building type
         for (building *b = building_first_of_type(type); b; b = next_of_type) {
             next_of_type = b->next_of_type;
-            if (b->state == BUILDING_STATE_IN_USE && b->house_size && b->house_population) {
+            // An ongoing outbreak must retain its recovery clock and remaining residents.
+            if (b->state == BUILDING_STATE_IN_USE && !b->has_plague && b->house_size && b->house_population) {
                 if (b->sickness_level >= MAX_SICKNESS_LEVEL) {
                     sick_people = 1;
                     sick_building_type = b->type;

@@ -7,6 +7,7 @@
 #include "platform/file_manager.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MAX_LINE 100
@@ -14,7 +15,8 @@
 
 #define HOTKEY_CONFIG_UNVERSIONED 0
 #define HOTKEY_CONFIG_ZOOM 1
-#define HOTKEY_CURRENT_VERSION HOTKEY_CONFIG_ZOOM
+#define HOTKEY_CONFIG_CANONICAL_BUILD_KEYS 2
+#define HOTKEY_CURRENT_VERSION HOTKEY_CONFIG_CANONICAL_BUILD_KEYS
 
 static const char *INI_FILENAME = "augustus-hotkeys.ini";
 
@@ -35,8 +37,8 @@ static const char *ini_keys[] = {
     "zoom_in",
     "zoom_out",
     "reset_zoom",
-    "build_vacant_house",
     "build_clear_land",
+    "build_vacant_house",
     "build_road",
     "build_plaza",
     "build_gardens",
@@ -306,15 +308,6 @@ static void load_defaults(void)
     }
 }
 
-static void add_mapping(int hotkey_id, const char *value)
-{
-    hotkey_mapping mapping;
-    if (key_combination_from_name(value, &mapping.key, &mapping.modifiers)) {
-        mapping.action = hotkey_id;
-        hotkey_config_add_mapping(&mapping);
-    }
-}
-
 static void load_file(void)
 {
     hotkey_config_clear();
@@ -343,6 +336,14 @@ static void load_file(void)
     char line_buffer[MAX_LINE];
     char *line;
     int version = HOTKEY_CONFIG_UNVERSIONED;
+    // Legacy versions wrote these two names in reversed enum order.
+    // Read the version first (it need not be the first line), then migrate once.
+    while (fgets(line_buffer, MAX_LINE, fp)) {
+        if (strncmp(line_buffer, "version=", 8) == 0) {
+            version = atoi(line_buffer + 8);
+        }
+    }
+    rewind(fp);
     while ((line = fgets(line_buffer, MAX_LINE, fp)) != 0) {
         // Remove newline from string
         size_t size = strlen(line);
@@ -363,18 +364,17 @@ static void load_file(void)
                     hotkey_mapping mapping;
                     if (key_combination_from_name(value, &mapping.key, &mapping.modifiers)) {
                         mapping.action = i;
+                        if (version < HOTKEY_CONFIG_CANONICAL_BUILD_KEYS) {
+                            if (i == HOTKEY_BUILD_CLEAR_LAND) mapping.action = HOTKEY_BUILD_VACANT_HOUSE;
+                            else if (i == HOTKEY_BUILD_VACANT_HOUSE) mapping.action = HOTKEY_BUILD_CLEAR_LAND;
+                        }
                         hotkey_config_add_mapping(&mapping);
                     }
                 }
                 break;
             }
         }
-        // Migrate changed keys
-        if (strcmp("build_clear_land", line) == 0) {
-            add_mapping(HOTKEY_BUILD_VACANT_HOUSE, value);
-        } else if (strcmp("build_vacant_house", line) == 0) {
-            add_mapping(HOTKEY_BUILD_CLEAR_LAND, value);
-        }
+
     }
     file_close(fp);
     if (data.num_mappings == 0) {

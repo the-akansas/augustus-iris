@@ -66,7 +66,7 @@ void figure_visited_buildings_remove_list(int index)
 void figure_visited_buildings_save_state(buffer *buf)
 {
     int buf_size = sizeof(int32_t) + visited_buildings.size * VISITED_BUILDINGS_BUFFER_SIZE;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(1, buf_size);
     buffer_init(buf, buf_data, buf_size);
     buffer_write_i32(buf, VISITED_BUILDINGS_BUFFER_SIZE);
     const visited_building *visited;

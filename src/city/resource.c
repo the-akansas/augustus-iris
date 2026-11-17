@@ -28,6 +28,7 @@
 #include "scenario/event/controller.h"
 #include "scenario/event/data.h"
 #include "scenario/property.h"
+#include "multiplayer/clock.h"
 
 #include <math.h>
 
@@ -386,7 +387,9 @@ void city_resource_determine_available(int storable_only)
                 available.food_list.items[available.food_list.size++] = r;
                 potential.food_list.items[potential.food_list.size++] = r;
             }
-        } else if (empire_can_produce_resource_potentially(r) || empire_can_import_resource_potentially(r) || city_resource_available_by_events(r)) {
+        } else if (empire_can_produce_resource_potentially(r) || empire_can_import_resource_potentially(r) || city_resource_available_by_events(r) || mp_clock_active()) {
+            /* Multiplayer: another player can send any good, so every good has its row in warehouse, granary and
+             * market orders (2026-11-13: a city could not be told to take marble a partner offered). */
             potential.resource_list.items[potential.resource_list.size++] = r;
             if (resource_is_food(r)) {
                 potential.food_list.items[potential.food_list.size++] = r;
@@ -406,7 +409,7 @@ void city_resource_determine_available(int storable_only)
                     available.food_list.items[available.food_list.size++] = r;
                     potential.food_list.items[potential.food_list.size++] = r;
                 }
-            } else if (empire_can_produce_resource_potentially(r) || empire_can_import_resource_potentially(r) || city_resource_available_by_events(r)) {
+            } else if (empire_can_produce_resource_potentially(r) || empire_can_import_resource_potentially(r) || city_resource_available_by_events(r) || mp_clock_active()) {
                 potential.resource_list.items[potential.resource_list.size++] = r;
                 if (resource_is_food(r)) {
                     potential.food_list.items[potential.food_list.size++] = r;

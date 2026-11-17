@@ -1,4 +1,7 @@
+#include "window/city.h"
 #include "message.h"
+#include "scenario/custom_messages.h"
+#include <string.h>
 
 #include "city/warning.h"
 #include "core/config.h"
@@ -130,6 +133,8 @@ static void enqueue_message(int sequence)
     }
 }
 
+int city_message_has_capacity(void){return new_message_id()>=0;}
+
 static void play_sound(int text_id)
 {
     if (lang_get_message(text_id)->urgent == 1) {
@@ -227,10 +232,13 @@ void city_message_post(int use_popup, int message_type, int param1, int param2)
     if (is_invasion_message(msg->message_type) && setting_game_speed() > 70) {
         setting_set_default_game_speed();
     }
-    if ((use_popup && window_is(WINDOW_CITY)) || window_is(WINDOW_BUILDING_INFO)) {
+    if (use_popup < 0) {
+        /* Silent inbox event: no popup, pause, sound, or queued dialog. */
+    } else if (!window_city_visit_ui_active() && ((use_popup && window_is(WINDOW_CITY)) || window_is(WINDOW_BUILDING_INFO))) {
         show_message_popup(id);
     } else if (use_popup) {
         // add to queue to be processed when player returns to city
+        if (window_city_visit_ui_active()) city_warning_show_custom(lang_get_message(text_id)->title.text, NEW_WARNING_SLOT);
         enqueue_message(msg->sequence);
     } else if (should_play_sound) {
         play_sound(text_id);
@@ -270,6 +278,8 @@ void city_message_post_with_message_delay(message_category category, int use_pop
 
 void city_message_process_queue(void)
 {
+    /* Keep unread queued messages intact until returning from live observation. */
+    if (window_city_visit_ui_active()) return;
     if (data.consecutive_message_delay > 0) {
         data.consecutive_message_delay--;
         return;
@@ -762,4 +772,23 @@ void city_message_load_state(buffer *messages, buffer *extra, buffer *counts, bu
     data.population_shown.pop15000 = buffer_read_u8(population);
     data.population_shown.pop20000 = buffer_read_u8(population);
     data.population_shown.pop25000 = buffer_read_u8(population);
+}
+
+void city_message_pin_chat(int custom_id,int unread){
+ int found=-1,changed=0;
+ for(int i=0;i<MAX_MESSAGES;i++){
+  city_message *m=&data.messages[i];if(m->message_type!=MESSAGE_CUSTOM_MESSAGE)continue;
+  if(m->param1==custom_id){if(found<0){found=i;continue;}m->message_type=0;changed=1;continue;}
+  custom_message_t *c=custom_messages_get(m->param1);
+  if(c && c->linked_uid && !strncmp((const char*)c->linked_uid->text,"mpchat:",7)){m->message_type=0;changed=1;}
+ }
+ if(found<0){
+  int id=new_message_id();
+  if(id>=0){city_message_post(-1,MESSAGE_CUSTOM_MESSAGE,custom_id,0);found=id;changed=1;}
+ }
+ if(found>=0){
+  data.messages[found].is_read=!unread;
+  data.messages[found].year=game_time_year();data.messages[found].month=game_time_month();
+ }
+ if(changed)city_message_sort_and_compact();
 }

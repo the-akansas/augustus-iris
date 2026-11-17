@@ -24,6 +24,7 @@ typedef struct {
 } empire_city;
 
 void empire_city_clear_all(void);
+int empire_city_reserve_for_player(int name_id);
 
 empire_city *empire_city_get(int city_id);
 

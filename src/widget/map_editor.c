@@ -512,7 +512,11 @@ void widget_map_editor_get_tooltip(tooltip_context *c)
 
 void widget_map_editor_handle_input(const mouse *m, const hotkeys *h)
 {
+    int middle_drag = scroll_handle_middle_mouse(m, input_coords_in_map(m->x, m->y));
     scroll_map(m);
+    if (middle_drag) {
+        return;
+    }
 
     int has_scrolled = 0;
 

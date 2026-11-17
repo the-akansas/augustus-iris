@@ -1,3 +1,5 @@
+#include "multiplayer/chat.h"
+#include "multiplayer/clock.h"
 #include "message_list.h"
 
 #include "city/message.h"
@@ -136,16 +138,23 @@ static void clear_filtered_message_list(void)
     data.filtered_message_list = 0;
 }
 
+static int observed_message_count;
 static void select_messages(void)
 {
+    observed_message_count=city_message_count();
     if (data.filtered_message_list) {
         clear_filtered_message_list();
     }
 
     data.message_count = 0;
     data.filtered_message_list = (int *) malloc(sizeof(int) * city_message_count());
+    for(int i=0;i<city_message_count();i++){
+        const city_message *m=city_message_get(i);
+        if(m->message_type==MESSAGE_CUSTOM_MESSAGE && mp_chat_is_inbox(m->param1))data.filtered_message_list[data.message_count++]=i;
+    }
     for (int i = 0; i < city_message_count(); i++) {
         const city_message *msg = city_message_get(i);
+        if(msg->message_type==MESSAGE_CUSTOM_MESSAGE && mp_chat_is_inbox(msg->param1))continue;
         if (data.type_displayed == COMMON_MESSAGES_ONLY && (msg->message_type == MESSAGE_CUSTOM_MESSAGE)) {
             continue;
         }
@@ -217,7 +226,7 @@ static void draw_messages(unsigned int total_messages)
                 image_offset = 2;
             }
         }
-        if (msg->is_read) {
+        if (msg->is_read && !(msg->message_type==MESSAGE_CUSTOM_MESSAGE && mp_chat_is_inbox(msg->param1))) {
             image_draw(image_group(GROUP_MESSAGE_ICON) + 15 + image_offset,
                 data.x_text + 12, data.y_text + 6 + 20 * i, COLOR_MASK_NONE, SCALE_NONE);
         } else {
@@ -250,6 +259,7 @@ static void draw_messages(unsigned int total_messages)
 
 static void draw_foreground(void)
 {
+    if(mp_clock_active() && observed_message_count!=city_message_count()){city_message_sort_and_compact();select_messages();window_invalidate();}
     graphics_in_dialog();
 
     image_buttons_draw(16, 32 + BLOCK_SIZE * data.height_blocks - 42, &image_button_help, 1);
@@ -266,6 +276,8 @@ static void draw_foreground(void)
 
     int total_messages = data.message_count;
     if (total_messages > 0) {
+        /* Foreground runs every frame; alpha glyphs must never accumulate. */
+        inner_panel_draw(data.x_text, data.y_text, data.text_width_blocks, data.text_height_blocks);
         draw_messages(total_messages);
     }
 
@@ -323,7 +335,7 @@ static void handle_input(const mouse *m, const hotkeys *h)
     if (!data.focus_button_id) {
         data.focus_button_id = button_id;
     }
-    if (button_id && old_button_id != button_id) {
+    if (old_button_id != data.focus_button_id) {
         window_invalidate();
     }
     if (!handled && input_go_back_requested(m, h)) {
@@ -374,6 +386,8 @@ static void button_delete(const generic_button *button)
     int id_to_delete = button->parameter1;
     int id = city_message_set_current(scrollbar.scroll_position + id_to_delete);
     if (id < data.message_count) {
+        const city_message *m=city_message_get(data.filtered_message_list[id]);
+        if(m->message_type==MESSAGE_CUSTOM_MESSAGE && mp_chat_is_inbox(m->param1))return;
         city_message_delete(data.filtered_message_list[id]);
         select_messages();
         window_invalidate();
@@ -398,7 +412,7 @@ static void button_delete_all_read(const generic_button *button)
 {
     for (int id = 0; id < city_message_count();) {
         const city_message *msg = city_message_get(id);
-        if (msg->is_read) {
+        if (msg->is_read && !(msg->message_type==MESSAGE_CUSTOM_MESSAGE && mp_chat_is_inbox(msg->param1))) {
             city_message_delete(id);
         } else {
             id++;

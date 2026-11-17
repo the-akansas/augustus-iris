@@ -1,3 +1,5 @@
+#include "graphics/korean_ascii_widths.h"
+#include "graphics/korean_extra_chars.h"
 #include "image.h"
 
 #include "assets/assets.h"
@@ -5,6 +7,7 @@
 #include "building/connectable.h"
 #include "building/image.h"
 #include "core/buffer.h"
+#include "core/config.h"
 #include "core/file.h"
 #include "core/image_packer.h"
 #include "core/io.h"
@@ -40,7 +43,7 @@
 #define ENEMY_DATA_SIZE 2400000
 #define EXTERNAL_FONT_DATA_SIZE 1500000
 #define CHINESE_FONT_DATA_SIZE 7200000
-#define KOREAN_FONT_DATA_SIZE 7500000
+#define KOREAN_FONT_DATA_SIZE 16000000
 #define JAPANESE_FONT_DATA_SIZE 11000000
 
 #define CYRILLIC_FONT_BASE_OFFSET 201
@@ -988,7 +991,11 @@ int image_load_climate(int climate_id, int is_editor, int force_reload, int keep
     }
 
     if (!keep_atlas_buffers) {
-        assets_init(data.is_editor != is_editor, atlas_data->buffers, atlas_data->image_widths);
+        // Editor asset layers copy pixels from the auxiliary game atlas. They
+        // cannot use asset_image_reload_climate's main-atlas reference refresh
+        // after that atlas changes. Recompose them whenever this editor image
+        // load was necessary; unchanged editor/climate requests returned above.
+        assets_init(is_editor || data.is_editor != is_editor, atlas_data->buffers, atlas_data->image_widths);
     }
     graphics_renderer()->create_image_atlas(atlas_data, !keep_atlas_buffers);
     image_packer_free(&data.packer);
@@ -1013,9 +1020,17 @@ int image_load_climate(int climate_id, int is_editor, int force_reload, int keep
     return 1;
 }
 
+static int loaded_korean_font = -1;
+static int loaded_korean_ascii;
+static int loaded_korean_extra;
+
 static void free_font_memory(void)
 {
     graphics_renderer()->free_image_atlas(ATLAS_FONT);
+    graphics_renderer()->free_image_atlas(ATLAS_FONT_ALTERNATE);
+    loaded_korean_font = -1;
+    loaded_korean_ascii = 0;
+    loaded_korean_extra = 0;
     free(data.font);
     data.font = 0;
     data.fonts_enabled = NO_EXTRA_FONT;
@@ -1223,14 +1238,64 @@ static int parse_1bit_multibyte_font(buffer *input, color_t *pixels, multibyte_f
     return pixel_offset;
 }
 
-static int load_multibyte_font(multibyte_font_type type)
+
+/* Optional, bounded high-resolution font sidecar. A missing or malformed sidecar
+ * retains the existing font, including its advances and fallback behavior. */
+static int hd_u16(const uint8_t *p) { return p[0] | (p[1] << 8); }
+static uint8_t *load_hd_font(int selection, int entries)
 {
-    multibyte_font_data *font_info = &multibyte_font_info[type];
+    static const char *names[] = {"dotum", "hahmlet", "ridi", "museum", "taebaek", "noto"};
+    if (selection < 0 || selection > 5 || (entries != IMAGE_FONT_MULTIBYTE_KOREAN_MAX_CHARS * 3 + 940 &&
+        entries != IMAGE_FONT_MULTIBYTE_KOREAN_MAX_CHARS * 3 + 940 + KOREAN_EXTRA_STYLES * KOREAN_EXTRA_SLOTS)) return 0;
+    char filename[64];
+    snprintf(filename, sizeof(filename), "korean-%s-hd.bin", names[selection]);
+    const int limit = 160 * 1024 * 1024;
+    uint8_t *raw = malloc(limit);
+    if (!raw) return 0;
+    int size = io_read_file_into_buffer(filename, MAY_BE_LOCALIZED, raw, limit);
+    if (size < 8 || memcmp(raw, "KHD1", 4) || hd_u16(raw + 4) != entries || hd_u16(raw + 6)) {
+        free(raw); return 0;
+    }
+    int pos = 8;
+    for (int n = 0; n < entries; ++n) {
+        if (pos > size - 8) { free(raw); return 0; }
+        int w = hd_u16(raw + pos), h = hd_u16(raw + pos + 2);
+        int x = (int16_t)hd_u16(raw + pos + 4), y = (int16_t)hd_u16(raw + pos + 6);
+        if (w < 1 || h < 1 || w > 192 || h > 192 || x < -32 || y < -32 ||
+            x > 192 || y > 192 || w * h > size - pos - 8) { free(raw); return 0; }
+        pos += 8 + w * h;
+    }
+    if (pos != size) { free(raw); return 0; }
+    pos = 8;
+    for (int n = 0; n < entries; ++n) {
+        image *img = &data.font[n];
+        img->hd.width = hd_u16(raw + pos); img->hd.height = hd_u16(raw + pos + 2);
+        img->hd.dx = (int16_t)hd_u16(raw + pos + 4); img->hd.dy = (int16_t)hd_u16(raw + pos + 6);
+        img->hd.offset = pos + 8; pos += 8 + img->hd.width * img->hd.height;
+    }
+    log_info("Loaded high resolution Korean font", filename, entries);
+    return raw;
+}
+
+static int build_multibyte_font(multibyte_font_type type, int selection, int strict, atlas_type atlas)
+{
+    int padded_korean = type == MULTIBYTE_FONT_KOREAN;
+    multibyte_font_data local_info = multibyte_font_info[type];
+    multibyte_font_data *font_info = &local_info;
+    if (padded_korean) {
+        for (int i = 0; i < FONT_STYLES; ++i) {
+            font_info->sizes.v2[i].width += 4;
+            font_info->sizes.v2[i].height += 4;
+        }
+    }
 
     int entries = FONT_STYLES * font_info->chars;
 
     uint8_t *tmp_data = malloc(font_info->data_size * sizeof(uint8_t));
-    if (!tmp_data || !alloc_font_memory(entries)) {
+    data.font = calloc(entries + (type == MULTIBYTE_FONT_KOREAN ? 940 + KOREAN_EXTRA_STYLES * KOREAN_EXTRA_SLOTS : 0), sizeof(image));
+    if (!tmp_data || !data.font) {
+        free(data.font);
+        data.font = 0;
         free(tmp_data);
         return 0;
     }
@@ -1238,29 +1303,109 @@ static int load_multibyte_font(multibyte_font_type type)
     log_info("Parsing multibyte font", font_info->name, 0);
 
     int file_version = 2;
-    int data_size = io_read_file_into_buffer(font_info->file_v2, MAY_BE_LOCALIZED, tmp_data, font_info->data_size);
+    int data_size = 0;
+    if (type == MULTIBYTE_FONT_KOREAN) {
+        const char *alternate = selection == 0 ? "korean-dotum-v2.555" : selection == 1 ? "korean-hahmlet-v2.555" :
+            selection == 2 ? "korean-ridi-v2.555" :
+            selection == 3 ? "korean-museum-v2.555" :
+            selection == 4 ? "korean-taebaek-v2.555" :
+            selection == 5 ? "korean-noto-v2.555" : 0;
+        if (alternate) {
+            data_size = io_read_file_into_buffer(alternate, MAY_BE_LOCALIZED, tmp_data, font_info->data_size);
+            /* 2350 glyphs, 12x12 / 15x15 / 20x20, two alpha nibbles per byte, row padded. */
+            if (data_size != IMAGE_FONT_MULTIBYTE_KOREAN_MAX_CHARS *
+                (8 * 16 + 10 * 19 + 12 * 24)) {
+                if (strict && selection != 0) {
+                    free(data.font);
+                    data.font = 0;
+                    free(tmp_data);
+                    return 0;
+                }
+                selection = 0;
+                padded_korean = 0;
+                local_info = multibyte_font_info[type];
+                log_error("Korean font missing or invalid; using original", alternate, data_size);
+                data_size = 0;
+            } else {
+                log_info("Selected Korean font", alternate, 0);
+            }
+        }
+    }
+    if (!data_size) {
+        data_size = io_read_file_into_buffer(font_info->file_v2, MAY_BE_LOCALIZED, tmp_data, font_info->data_size);
+    }
     if (!data_size) {
         if (font_info->file_v1) {
             file_version = 1;
             data_size = io_read_file_into_buffer(font_info->file_v1, MAY_BE_LOCALIZED, tmp_data, font_info->data_size);
         }
         if (!data_size) {
-            free_font_memory();
+            free(data.font);
+            data.font = 0;
             free(tmp_data);
             log_error("Augustus requires extra files for the characters:", font_info->file_v2, 0);
             return 0;
         }
     }
 
+    if (type == MULTIBYTE_FONT_KOREAN) {
+        multibyte_font_sizes *sizes = file_version == 2 ? font_info->sizes.v2 : font_info->sizes.v1;
+        int expected = 0;
+        for (int i = 0; i < FONT_STYLES; i++) {
+            int width = sizes[i].width - font_info->letter_spacing;
+            int row_bytes = file_version == 2 ? (width + 1) / 2 : (width <= 16 ? 2 : 3);
+            expected += row_bytes * sizes[i].height * font_info->chars;
+        }
+        if (data_size != expected) {
+            log_error("Invalid Korean font size", 0, data_size);
+            free(data.font);
+            data.font = 0;
+            free(tmp_data);
+            return 0;
+        }
+    }
+
+    int has_ascii = type == MULTIBYTE_FONT_KOREAN;
+    if (has_ascii) {
+        const char *file = selection == 0 ? "korean-original-ascii.bin" : selection == 1 ? "korean-hahmlet-ascii.bin" :
+            selection == 2 ? "korean-ridi-ascii.bin" :
+            selection == 3 ? "korean-museum-ascii.bin" :
+            selection == 4 ? "korean-taebaek-ascii.bin" : "korean-noto-ascii.bin";
+        int length = io_read_file_into_buffer(file, MAY_BE_LOCALIZED, tmp_data + data_size,
+            font_info->data_size - data_size);
+        if (length != 940 * 48 * 48) {
+            log_error("Korean font missing or invalid; using original", file, length);
+            if (selection == 0 && !strict) {
+                has_ascii = 0; /* Last-resort original bitmap fallback. */
+            } else {
+                free(data.font); data.font = 0; free(tmp_data);
+                return strict ? 0 : build_multibyte_font(type, 0, 0, atlas);
+            }
+        }
+        if (has_ascii) entries += 940;
+    }
+    /* Letters outside the CP949 table (Cyrillic, Latin-1, a few marks) for the multilingual build; only the Noto
+     * family ships them. Missing or malformed: those letters are not drawn, everything else is unchanged. */
+    int extra = 0;
+    if (has_ascii && selection == 5) {
+        int length = io_read_file_into_buffer("korean-noto-extra.bin", MAY_BE_LOCALIZED, tmp_data + data_size + 940 * 2304,
+            font_info->data_size - data_size - 940 * 2304);
+        extra = length == KOREAN_EXTRA_STYLES * KOREAN_EXTRA_SLOTS * 2304;
+        if (extra) entries += KOREAN_EXTRA_STYLES * KOREAN_EXTRA_SLOTS;
+        else log_error("Korean extra letters missing or invalid", "korean-noto-extra.bin", length);
+    }
+    int ascii_count = has_ascii ? 940 + (extra ? KOREAN_EXTRA_STYLES * KOREAN_EXTRA_SLOTS : 0) : 0;
+    uint8_t *hd_data = padded_korean && has_ascii ? load_hd_font(selection, entries) : 0;
     buffer input;
     buffer_init(&input, tmp_data, data_size);
     int num_chars = font_info->chars;
     int num_half_width = font_info->half_width_chars;
     int num_full_width = num_chars - num_half_width;
 
-    if (image_packer_init(&data.packer, entries, data.max_image_width, data.max_image_height) != IMAGE_PACKER_OK) {
-        free_font_memory();
-        free(tmp_data);
+    if (image_packer_init(&data.packer, entries * (hd_data ? 2 : 1), data.max_image_width, data.max_image_height) != IMAGE_PACKER_OK) {
+        free(data.font);
+        data.font = 0;
+        free(tmp_data); free(hd_data);
         log_error("Internal error loading font", 0, 0);
         return 0;
     }
@@ -1285,11 +1430,13 @@ static int load_multibyte_font(multibyte_font_type type)
         font_sizes[1].half_width * font_sizes[1].height +
         font_sizes[2].half_width * font_sizes[2].height) * num_half_width;
 
+    if (has_ascii) font_data_size += sizeof(color_t) * ascii_count * 48 * 48;
     color_t *font_data = malloc(font_data_size);
     if (!font_data) {
         image_packer_free(&data.packer);
-        free_font_memory();
-        free(tmp_data);
+        free(data.font);
+        data.font = 0;
+        free(tmp_data); free(hd_data);
         return 0;
     }
 
@@ -1300,53 +1447,189 @@ static int load_multibyte_font(multibyte_font_type type)
             num_chars, num_half_width, num_chars * i);
     }
 
+    if (has_ascii) {
+        for (int n = 0; n < ascii_count; n++) {
+            int offset = FONT_STYLES * num_chars + n;
+            image *img = &data.font[offset];
+            int left = 48, top = 48, right = -1, bottom = -1;
+            for (int y = 0; y < 48; y++) for (int x = 0; x < 48; x++) {
+                uint8_t a = tmp_data[data_size + n * 2304 + y * 48 + x];
+                if (a) {
+                    font_offset[y * 48 + x] = ((color_t) a << COLOR_BITSHIFT_ALPHA) | COLOR_CHANNEL_RGB;
+                    if (x < left) left = x; if (x > right) right = x;
+                    if (y < top) top = y; if (y > bottom) bottom = y;
+                }
+            }
+            if ((right < left || bottom < top) && n >= 940) {
+                /* an unused extra slot or a blank letter (no-break space) */
+                img->original.width = img->original.height = 48;
+                img->x_offset = img->y_offset = 0; img->width = img->height = 0;
+                data.packer.rects[offset].input.width = data.packer.rects[offset].input.height = 0;
+                font_offset += 2304;
+                continue;
+            }
+            if (right < left || bottom < top) {
+                image_packer_free(&data.packer); free(data.font); data.font = 0;
+                free(font_data); free(tmp_data); free(hd_data);
+                log_error("Empty Korean digit glyph", 0, n);
+                return strict || selection == 0 ? 0 : build_multibyte_font(type, 0, 0, atlas);
+            }
+            img->original.width = img->original.height = 48;
+            img->x_offset = left; img->y_offset = top;
+            img->width = right - left + 1; img->height = bottom - top + 1;
+            data.packer.rects[offset].input.width = img->width;
+            data.packer.rects[offset].input.height = img->height;
+            font_offset += 2304;
+        }
+    }
+    if (hd_data) for (int n = 0; n < entries; ++n) {
+        data.packer.rects[entries + n].input.width = data.font[n].hd.width;
+        data.packer.rects[entries + n].input.height = data.font[n].hd.height;
+    }
     image_packer_pack(&data.packer);
-    const image_atlas_data *atlas_data = graphics_renderer()->prepare_image_atlas(ATLAS_FONT,
+    const image_atlas_data *atlas_data = graphics_renderer()->prepare_image_atlas(atlas,
         data.packer.result.images_needed, data.packer.result.last_image_width, data.packer.result.last_image_height);
     if (!atlas_data) {
         free(font_data);
         image_packer_free(&data.packer);
-        free_font_memory();
-        free(tmp_data);
+        free(data.font);
+        data.font = 0;
+        free(tmp_data); free(hd_data);
         return 0;
     }
 
     color_t *letter = font_data;
-    for (int i = 0; i < FONT_STYLES; i++) {
-        int offset = i * num_chars;
-        int original_height = font_sizes[i].height;
-        for (int j = 0; j < num_chars; j++) {
-            image *img = &data.font[offset + j];
-            image_packer_rect *rect = &data.packer.rects[offset + j];
-            img->atlas.id = (ATLAS_FONT << IMAGE_ATLAS_BIT_OFFSET) | rect->output.image_index;
-            img->atlas.x_offset = rect->output.x;
-            img->atlas.y_offset = rect->output.y;
-
-            color_t *dst = atlas_data->buffers[rect->output.image_index];
-            int dst_width = atlas_data->image_widths[rect->output.image_index];
-
-            for (int y = 0; y < img->height; y++) {
-                memcpy(&dst[(img->atlas.y_offset + y) * dst_width + img->atlas.x_offset],
-                    &letter[(img->y_offset + y) * img->original.width + img->x_offset], img->width * sizeof(color_t));
-            }
-            letter += original_height * img->original.width;
+    for (int i = 0; i < entries; i++) {
+        image *img = &data.font[i];
+        image_packer_rect *rect = &data.packer.rects[i];
+        img->atlas.id = ((unsigned) atlas << IMAGE_ATLAS_BIT_OFFSET) | rect->output.image_index;
+        img->atlas.x_offset = rect->output.x; img->atlas.y_offset = rect->output.y;
+        color_t *dst = atlas_data->buffers[rect->output.image_index];
+        int dst_width = atlas_data->image_widths[rect->output.image_index];
+        for (int y = 0; y < img->height; y++) {
+            memcpy(&dst[(img->atlas.y_offset + y) * dst_width + img->atlas.x_offset],
+                &letter[(img->y_offset + y) * img->original.width + img->x_offset], img->width * sizeof(color_t));
         }
+        letter += img->original.height * img->original.width;
     }
 
-    graphics_renderer()->create_image_atlas(atlas_data, 1);
+    if (hd_data) for (int n = 0; n < entries; ++n) {
+        image *img = &data.font[n]; image_packer_rect *rect = &data.packer.rects[entries + n];
+        img->hd.id = ((unsigned)atlas << IMAGE_ATLAS_BIT_OFFSET) | rect->output.image_index;
+        img->hd.x = rect->output.x; img->hd.y = rect->output.y;
+        color_t *dst = atlas_data->buffers[rect->output.image_index];
+        int pitch = atlas_data->image_widths[rect->output.image_index];
+        for (int y = 0; y < img->hd.height; ++y) for (int x = 0; x < img->hd.width; ++x) {
+            uint8_t alpha = hd_data[img->hd.offset + y * img->hd.width + x];
+            dst[(img->hd.y + y) * pitch + img->hd.x + x] = ((color_t)alpha << COLOR_BITSHIFT_ALPHA) | COLOR_CHANNEL_RGB;
+        }
+    }
+    int created = graphics_renderer()->create_image_atlas(atlas_data, 1);
 
     log_info("Done parsing font", font_info->name, 0);
 
     image_packer_free(&data.packer);
     free(font_data);
-    free(tmp_data);
+    free(tmp_data); free(hd_data);
+    if (!created) {
+        free(data.font);
+        data.font = 0;
+        return 0;
+    }
+    if (padded_korean) {
+        /* Preserve the fixed advance and the common baseline; retain ink overhang. */
+        for (int i = 0; i < FONT_STYLES * num_chars; ++i) {
+            data.font[i].original.width -= 4;
+            data.font[i].original.height -= 4;
+            data.font[i].x_offset -= 2;
+            data.font[i].y_offset -= 2;
+        }
+    }
+    if (has_ascii) {
+        for (int n = 0; n < ascii_count; n++) {
+            int style = n < 940 ? n / 94 : (n - 940) / KOREAN_EXTRA_SLOTS;
+            image *img = &data.font[FONT_STYLES * num_chars + n];
+            img->original.width = n < 940 ? korean_ascii_widths[selection == 0 ? 4 : selection == 5 ? 5 : selection - 1][n] :
+                korean_extra_widths[n - 940];
+            img->original.height = style >= 4 && style <= 6 ? 20 : style == 0 ? 15 : 12;
+            img->x_offset -= 8; img->y_offset -= 8;
+        }
+    }
+    if (type == MULTIBYTE_FONT_KOREAN) {
+        loaded_korean_font = selection;
+        loaded_korean_ascii = has_ascii;
+        loaded_korean_extra = extra;
+    }
     data.fonts_enabled = MULTIBYTE_IN_FONT;
     data.font_base_offset = 0;
     return 1;
 }
 
+/* Keep the currently displayed atlas until the complete replacement exists. */
+static int replace_multibyte_font(multibyte_font_type type, int selection, int strict)
+{
+    image *previous = data.font;
+    int previous_enabled = data.fonts_enabled;
+    int previous_offset = data.font_base_offset;
+    atlas_type previous_atlas = previous ? (unsigned) previous[0].atlas.id >> IMAGE_ATLAS_BIT_OFFSET : ATLAS_FONT;
+    atlas_type target = previous_atlas == ATLAS_FONT ? ATLAS_FONT_ALTERNATE : ATLAS_FONT;
+    data.font = 0;
+    if (!build_multibyte_font(type, selection, strict, target)) {
+        graphics_renderer()->free_image_atlas(target);
+        data.font = previous;
+        data.fonts_enabled = previous_enabled;
+        data.font_base_offset = previous_offset;
+        return 0;
+    }
+    if (previous) {
+        graphics_renderer()->free_image_atlas(previous_atlas);
+        free(previous);
+    }
+    return 1;
+}
+
+static int load_multibyte_font(multibyte_font_type type)
+{
+    /* Global edition (2026-11-14): Noto Sans KR only; the old five Korean fonts are no longer shipped.
+     * The korean_font setting is ignored. If the Noto files are missing, build_multibyte_font falls back
+     * to the base Korean font (korean-v2.555) as before. */
+    (void) config_get(CONFIG_KOREAN_FONT);
+    return replace_multibyte_font(type, 5, 0);
+}
+
+int image_preview_korean_font(int selection)
+{
+    if (selection < 0 || selection > 5) return 0;
+    if (encoding_get() != ENCODING_KOREAN) return 1;
+    if (selection == loaded_korean_font) return 1;
+    graphics_renderer()->get_max_image_size(&data.max_image_width, &data.max_image_height);
+    return replace_multibyte_font(MULTIBYTE_FONT_KOREAN, selection, 1);
+}
+
+int image_has_korean_ascii(void)
+{
+    return loaded_korean_ascii;
+}
+
+int image_has_korean_extra(void)
+{
+    return loaded_korean_ascii && loaded_korean_extra;
+}
+
+int image_get_korean_font(void)
+{
+    return loaded_korean_font;
+}
+
 int image_load_fonts(encoding_type encoding)
 {
+    /* The engine worker (engine_main.c: the scenario creator's terrain and city checks) draws no text. It used to
+     * read and pack the whole Korean font, HD glyphs included, on every start: about 5 s and over 1 GB each time,
+     * and the creator waits for several of them when a map or a city is chosen (user 2026-11-14: 30 s and more). */
+    const char *worker = getenv("AUGUSTUS_ENGINE_WORKER");
+    if (worker && worker[0] == '1') {
+        return 1;
+    }
     graphics_renderer()->get_max_image_size(&data.max_image_width, &data.max_image_height);
 
     if (encoding == ENCODING_CYRILLIC) {

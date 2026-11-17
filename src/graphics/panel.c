@@ -4,6 +4,7 @@
 #include "graphics/button.h"
 #include "graphics/graphics.h"
 #include "graphics/image.h"
+#include "graphics/renderer.h"
 
 #define INNER_PANEL_MIN_SIZE (2 * BLOCK_SIZE)
 #define SCROLL_PANEL_WIDTH 24
@@ -14,6 +15,9 @@
 
 void outer_panel_draw(int x, int y, int width_blocks, int height_blocks)
 {
+    int raster_panel = graphics_renderer()->begin_panel_layer &&
+        graphics_renderer()->begin_panel_layer(x, y, width_blocks * BLOCK_SIZE, height_blocks * BLOCK_SIZE);
+
     int image_base = image_group(GROUP_DIALOG_BACKGROUND);
     int image_id;
     int image_y = 0;
@@ -59,10 +63,14 @@ void outer_panel_draw(int x, int y, int width_blocks, int height_blocks)
             image_y = 0;
         }
     }
+    if (raster_panel) graphics_renderer()->end_panel_layer();
 }
 
 void outer_panel_draw_colored(int x, int y, int width, int height, color_t color)
 {
+    int raster_panel = graphics_renderer()->begin_panel_layer &&
+        graphics_renderer()->begin_panel_layer(x, y, ((width + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE, ((height + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE);
+
     int width_blocks = (width + BLOCK_SIZE - 1) / BLOCK_SIZE;
     int height_blocks = (height + BLOCK_SIZE - 1) / BLOCK_SIZE;
     int image_base = image_group(GROUP_DIALOG_BACKGROUND);
@@ -110,10 +118,14 @@ void outer_panel_draw_colored(int x, int y, int width, int height, color_t color
             image_y = 0;
         }
     }
+    if (raster_panel) graphics_renderer()->end_panel_layer();
 }
 
 void unbordered_panel_draw_colored(int x, int y, int width_blocks, int height_blocks, color_t color)
 {
+    int raster_panel = graphics_renderer()->begin_panel_layer &&
+        graphics_renderer()->begin_panel_layer(x, y, width_blocks * BLOCK_SIZE, height_blocks * BLOCK_SIZE);
+
     int image_base = image_group(GROUP_DIALOG_BACKGROUND);
     int image_y = 0;
     for (int yy = 0; yy < height_blocks; yy++) {
@@ -130,6 +142,7 @@ void unbordered_panel_draw_colored(int x, int y, int width_blocks, int height_bl
             image_y = 0;
         }
     }
+    if (raster_panel) graphics_renderer()->end_panel_layer();
 }
 
 void unbordered_panel_draw(int x, int y, int width_blocks, int height_blocks)
@@ -296,6 +309,9 @@ void scrollbar_thumb_draw(int x, int y, int middle_sections, int is_vertical, in
 
 void inner_panel_draw(int x, int y, int width_blocks, int height_blocks)
 {
+    int raster_panel = graphics_renderer()->begin_panel_layer &&
+        graphics_renderer()->begin_panel_layer(x, y, width_blocks * BLOCK_SIZE, height_blocks * BLOCK_SIZE);
+
     int image_base = image_group(GROUP_SUNKEN_TEXTBOX_BACKGROUND);
     int image_y = 0;
     int y_add = 0;
@@ -341,6 +357,7 @@ void inner_panel_draw(int x, int y, int width_blocks, int height_blocks)
             image_y = 0;
         }
     }
+    if (raster_panel) graphics_renderer()->end_panel_layer();
 }
 
 static int divide_round_up(int value, int divisor)
@@ -350,6 +367,9 @@ static int divide_round_up(int value, int divisor)
 
 void inner_panel_draw_colored(int x, int y, int width, int height, color_t color)
 {
+    int raster_panel = graphics_renderer()->begin_panel_layer &&
+        graphics_renderer()->begin_panel_layer(x, y, ((width + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE, ((height + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE);
+
     int image_base = image_group(GROUP_SUNKEN_TEXTBOX_BACKGROUND);
 
     int right_x = x + width - BLOCK_SIZE;
@@ -387,6 +407,7 @@ void inner_panel_draw_colored(int x, int y, int width, int height, color_t color
         image_draw(image_base + image_id, x + BLOCK_SIZE * (column + 1), bottom_y, color, SCALE_NONE);
     }
     image_draw(image_base + 48, right_x, bottom_y, color, SCALE_NONE);
+    if (raster_panel) graphics_renderer()->end_panel_layer();
 }
 
 void label_draw(int x, int y, int width_blocks, int type)
@@ -443,6 +464,9 @@ void large_label_draw_bg(int x, int y, int width, int height)
 
 void large_label_draw_bg_colored(int x, int y, int width, int height, color_t color)
 {
+    int raster_panel = graphics_renderer()->begin_panel_layer &&
+        graphics_renderer()->begin_panel_layer(x, y, width, height);
+
     graphics_set_clip_rectangle(x, y, width, height);
     color_t mask_50 = color_mask_50_opacity(color);
     const int panel_width_left = 13;
@@ -477,6 +501,7 @@ void large_label_draw_bg_colored(int x, int y, int width, int height, color_t co
         image_draw(panel_mirror_base + 2, x + width - panel_width_left, row_y, mask_50, SCALE_NONE);
     }
     graphics_reset_clip_rectangle();
+    if (raster_panel) graphics_renderer()->end_panel_layer();
 }
 
 static inline uint32_t color_mask_opacity(int opacity)
@@ -512,6 +537,9 @@ void large_label_draw_border(int x, int y, int width, int height)
 
 void large_label_draw_border_colored(int x, int y, int width, int height, color_t color)
 {
+    int raster_border = graphics_renderer()->begin_border_layer &&
+        graphics_renderer()->begin_border_layer(x, y, width, height);
+
     graphics_set_clip_rectangle(x, y, width, height);
     const int frame_size = 16;
     int frame_base = assets_lookup_image_id(ASSET_UI_BTN_MENU_FRAME_01);
@@ -541,6 +569,7 @@ void large_label_draw_border_colored(int x, int y, int width, int height, color_
     image_draw(frame_base + 7, x + width - frame_size, y + height - frame_size, color, SCALE_NONE); // right
 
     graphics_reset_clip_rectangle();
+    if (raster_border) graphics_renderer()->end_panel_layer();
 }
 
 void segmented_border_draw_colored(int x, int y, int width, int height, color_t color)

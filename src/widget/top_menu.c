@@ -1,4 +1,7 @@
 #include "top_menu.h"
+#include "multiplayer/clock.h"
+#include "multiplayer/chat.h"
+#include "window/multiplayer_lobby.h"
 
 #include "assets/assets.h"
 #include "building/construction.h"
@@ -97,6 +100,21 @@ static menu_item menu_file[] = {
     {1, 5, menu_file_exit_game, 0},
 };
 
+static void clear_state(void);
+#include "multiplayer_goals.inc"
+#include "participant_admin.inc"
+static void menu_mp_action(int action){
+    clear_state();window_city_show();
+    if(action==0)mp_client_command("save","");
+    else if(action==1)mp_client_command("cancel_save","");
+}
+static menu_item menu_file_mp[]={
+ {CUSTOM_TRANSLATION,TR_MP_OBJECTIVES,menu_mp_goals,0},
+ {CUSTOM_TRANSLATION,TR_MP_SAVE,menu_mp_action,0},
+ {CUSTOM_TRANSLATION,TR_MP_SAVE_CANCEL,menu_mp_action,1},
+ {CUSTOM_TRANSLATION,TR_BUTTON_BACK_TO_MAIN_MENU,menu_file_exit_to_main_menu,0},
+ {1,5,menu_file_exit_game,0},
+};
 static menu_item menu_options[] = {
     {CUSTOM_TRANSLATION, TR_CONFIG_HEADER_GENERAL, menu_options_general, 0},
     {CUSTOM_TRANSLATION, TR_CONFIG_HEADER_UI_CHANGES, menu_options_user_interface, 0},
@@ -105,8 +123,10 @@ static menu_item menu_options[] = {
     {CUSTOM_TRANSLATION, TR_BUTTON_CONFIGURE_HOTKEYS, menu_options_hotkeys, 0},
     {19, 51, menu_options_monthly_autosave, 0},
     {CUSTOM_TRANSLATION, TR_BUTTON_YEARLY_AUTOSAVE_OFF, menu_options_yearly_autosave, 0},
+    {CUSTOM_TRANSLATION, TR_MP_PARTICIPANTS, menu_mp_admin, 0},
 };
 
+static menu_item menu_options_mp[7];
 static menu_item menu_help[] = {
     {3, 1, menu_help_help, 0},
     {3, 2, menu_help_mouse_help, 0},
@@ -187,11 +207,13 @@ static void clear_state(void)
 
 static void set_text_for_monthly_autosave(void)
 {
+    if(mp_clock_active())return;
     menu_update_text(&menu[INDEX_OPTIONS], 5, setting_monthly_autosave() ? 51 : 52);
 }
 
 static void set_text_for_yearly_autosave(void)
 {
+    if(mp_clock_active())return;
     menu_update_text(&menu[INDEX_OPTIONS], 6,
         config_get(CONFIG_GP_CH_YEARLY_AUTOSAVE) ? TR_BUTTON_YEARLY_AUTOSAVE_ON : TR_BUTTON_YEARLY_AUTOSAVE_OFF);
 }
@@ -222,6 +244,15 @@ static void set_text_for_warnings(void)
 
 static void init(void)
 {
+    menu[0].items=mp_clock_active()?menu_file_mp:menu_file;
+    menu[0].num_items=mp_clock_active()?5:6;
+    if(mp_clock_active()){
+        for(int i=0;i<5;i++)menu_options_mp[i]=menu_options[i];
+        menu_options_mp[5]=(menu_item){CUSTOM_TRANSLATION,TR_MP_SAVE_SETTINGS,menu_options_monthly_autosave,0};
+        menu_options_mp[6]=menu_options[7];
+        menu[1].items=menu_options_mp;menu[1].num_items=admin_is_host()?7:6;
+    }else{menu[1].items=menu_options;menu[1].num_items=7;}
+    menu[1].calculated_width_blocks=menu[1].calculated_height_blocks=0;
     set_text_for_monthly_autosave();
     set_text_for_yearly_autosave();
     set_text_for_tooltips();
@@ -997,12 +1028,14 @@ static void menu_options_hotkeys(int param)
 
 static void menu_options_monthly_autosave(int param)
 {
+    if(mp_clock_active()){clear_state();window_go_back();window_multiplayer_save_options_show();return;}
     setting_toggle_monthly_autosave();
     set_text_for_monthly_autosave();
 }
 
 static void menu_options_yearly_autosave(int param)
 {
+    if(mp_clock_active())return;
     config_set(CONFIG_GP_CH_YEARLY_AUTOSAVE, !config_get(CONFIG_GP_CH_YEARLY_AUTOSAVE));
     config_save();
     set_text_for_yearly_autosave();

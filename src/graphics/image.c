@@ -68,10 +68,20 @@ static color_t base_color_for_font(font_t font)
 static void draw_multibyte_letter(font_t font, const image *img, int x, int y, color_t color, float scale)
 {
     switch (font) {
-        case FONT_NORMAL_WHITE:
-            graphics_renderer()->draw_image(img, x + 1, y + 1, 0xff311c10, scale);
+        case FONT_NORMAL_WHITE: {
+            int korean = encoding_get() == ENCODING_KOREAN;
+            color_t shadow = korean ? 0xff291800 : 0xff311c10;
+            /* Native white glyphs contain darker, firmer shadow pixels.
+               Keep the original one-pixel offset. A half-strength pass at the
+               SAME position raises coverage to a + 0.5*a*(1-a), without
+               widening the shadow or changing the foreground mask. */
+            if (korean) {
+                graphics_renderer()->draw_image(img, x + 1, y + 1, 0x80291800, scale);
+            }
+            graphics_renderer()->draw_image(img, x + 1, y + 1, shadow, scale);
             graphics_renderer()->draw_image(img, x, y, COLOR_WHITE, scale);
             break;
+        }
         case FONT_NORMAL_RED:
             graphics_renderer()->draw_image(img, x + 1, y + 1, 0xffe7cfad, scale);
             graphics_renderer()->draw_image(img, x, y, 0xff731408, scale);
@@ -87,7 +97,9 @@ static void draw_multibyte_letter(font_t font, const image *img, int x, int y, c
             break;
         case FONT_NORMAL_BROWN:
         case FONT_LARGE_BROWN:
-            graphics_renderer()->draw_image(img, x, y, COLOR_FONT_PLAIN, scale);
+            /* Same glyph size as the black font; an explicit colour is used for
+             * dimmed controls (no caller passed one before). */
+            graphics_renderer()->draw_image(img, x, y, color ? (ALPHA_OPAQUE | color) : COLOR_FONT_PLAIN, scale);
             break;
         default: // Plain + brown
             if (!color) {

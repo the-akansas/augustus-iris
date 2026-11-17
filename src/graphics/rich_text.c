@@ -91,8 +91,12 @@ void rich_text_set_fonts(font_t normal_font, font_t heading_font, font_t link_fo
     data.paragraph_indent = locale_paragraph_indent();
 }
 
+static int literal_text;
+void rich_text_set_literal(int value){literal_text=value;}
+
 void rich_text_reset(int scroll_position)
 {
+    literal_text=0;
     scrollbar_reset(&scrollbar, scroll_position);
     data.num_lines = 0;
     rich_text_clear_links();
@@ -150,7 +154,7 @@ static int get_word_width(const uint8_t *str, const font_definition *def, int in
     int start_link = 0;
     *num_chars = 0;
     while (*str && ++guard < 2000) {
-        if (*str == '@') {
+        if (!literal_text && *str == '@') {
             str++;
             if (*str == 'P' || *str == 'L' || *str == 'G' || *str == 'H') {
                 *num_chars += 2;
@@ -204,7 +208,7 @@ static void draw_line(const uint8_t *str, const font_definition *font, int x, in
     int num_link_chars = 0;
     const font_definition *def = font;
     while (*str) {
-        if (*str == '@') {
+        if (!literal_text && *str == '@') {
             int message_id = string_to_int(++str);
             while (*str >= '0' && *str <= '9') {
                 str++;
@@ -227,7 +231,7 @@ static void draw_line(const uint8_t *str, const font_definition *font, int x, in
                 }
                 const image *img = image_letter(letter_id);
                 if (!measure_only) {
-                    int height = def->image_y_offset(*str, img->height + img->y_offset, def->line_height);
+                    int height = font_letter_y_offset(def, *str, letter_id);
                     image_draw_letter(def->font, letter_id, x, y - height, color, SCALE_NONE);
                 }
                 x += img->original.width + def->letter_spacing;
@@ -394,7 +398,7 @@ static int draw_text(const uint8_t *text, int x_offset, int y_offset,
                 int can_cut_more = 1;
                 while (can_cut_more) {
                     char c = *text;
-                    if (c == '@') {
+                    if (!literal_text && c == '@') {
                         break;
                     }
                     text++;
@@ -413,7 +417,7 @@ static int draw_text(const uint8_t *text, int x_offset, int y_offset,
                 current_width += word_width;
                 for (int i = 0; i < word_num_chars; i++) {
                     char c = *text++;
-                    if (c == '@') {
+                    if (!literal_text && c == '@') {
                         // Heading
                         if (*text == 'H') {
                             heading = 1;

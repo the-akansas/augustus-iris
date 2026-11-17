@@ -138,6 +138,8 @@ typedef struct {
     } prev;
 
     unsigned int target_formation_id;
+    unsigned int mp_expedition_id; /* Stable expedition token; zero means local. */
+    unsigned char mp_expedition_role; /* 0 source vacancy, 1 visiting support, 2 visiting attacker. */
 
 } formation;
 

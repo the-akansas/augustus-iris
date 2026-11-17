@@ -1,5 +1,7 @@
 #include "military.h"
 
+#include <stdio.h>
+
 #include "assets/assets.h"
 #include "building/count.h"
 #include "city/view.h"
@@ -26,6 +28,10 @@
 #include "window/building/military.h"
 #include "window/city.h"
 #include "window/military_menu.h"
+#include "city/warning.h"
+#include "core/encoding.h"
+#include "core/time.h"
+#include "multiplayer/chat.h"
 
 
 #define LAYOUTS_PER_LEGION 5
@@ -154,6 +160,24 @@ static struct {
     unsigned int bottom_buttons_focus_id;
     int city_view_was_collapsed;
 } data;
+
+/* Multiplayer: a visiting support legion (another player's, defending this city) is commanded here by its host:
+ * map click moves its standard, the layout buttons work as usual (mop up = automatic defence), "return to fort"
+ * sends it back to its owner (asked twice), and it cannot be given to the emperor. */
+static time_millis visitor_send_back_asked;
+static unsigned int visitor_send_back_token;
+static const uint8_t *visitor_text(const char *utf8)
+{
+    static uint8_t text[4][160];
+    static int next;
+    uint8_t *out = text[next++ & 3];
+    encoding_from_utf8(utf8, out, 160);
+    return out;
+}
+static int is_visitor(const formation *m)
+{
+    return m->in_use && m->mp_expedition_role == 1;
+}
 
 static int available_layouts_for_legion(const formation *m)
 {
@@ -289,6 +313,12 @@ static void draw_military_info_text(int x_offset, int y_offset)
     const formation *m = formation_get(legion->formation_id);
     update_legion_info(legion, m);
 
+    if (is_visitor(m)) {
+        // No fort, flag or legion name of this city: say whose side it is on and how it behaves
+        text_draw_centered(visitor_text("방문 지원군"), x_offset, y_offset + 16, CONTENT_WIDTH, FONT_NORMAL_WHITE, 0);
+        text_draw_centered(visitor_text(m->layout == FORMATION_MOP_UP ? "자동 · 적 추적" : "수동 · 위치 고수"),
+            x_offset, y_offset + 40, CONTENT_WIDTH, FONT_NORMAL_GREEN, 0);
+    } else {
     int formation_image_id = m->legion_flag_id;
     const image *formation_image = image_get(formation_image_id);
 
@@ -298,6 +328,7 @@ static void draw_military_info_text(int x_offset, int y_offset)
         COLOR_MASK_NONE, SCALE_NONE);
 
     lang_text_draw_centered(m->legion_name_group, m->legion_name_id, x_offset, y_offset + 40, CONTENT_WIDTH, FONT_NORMAL_WHITE);
+    }
 
     // Number of soldiers
     int width = text_draw_number(m->num_figures, '@', " ", x_offset, y_offset + 60, FONT_NORMAL_WHITE, 0);
@@ -532,6 +563,12 @@ int widget_sidebar_military_get_tooltip_text(tooltip_context *c)
         c->text_group = 138;
         return get_layout_text_id(layout);
     }
+    if (data.bottom_buttons_focus_id > 1 && is_visitor(formation_get(data.active_legion.formation_id))) {
+        c->precomposed_text = visitor_text(data.bottom_buttons_focus_id == 2 ?
+            "지원군을 주인에게 돌려보냅니다. 두 번 눌러 확인합니다." : "다른 플레이어의 지원군은 황제에게 보낼 수 없습니다.");
+        c->type = TOOLTIP_BUTTON;
+        return 1;
+    }
     if (data.bottom_buttons_focus_id) {
         c->extra_text_type = TOOLTIP_EXTRA_TEXT_JOINED_BY_SPACE;
         c->num_extra_texts = 1;
@@ -669,6 +706,21 @@ static void button_go_to_legion(const generic_button *button)
 static void button_return_to_fort(const generic_button *button)
 {
     formation *m = formation_get(data.active_legion.formation_id);
+    if (is_visitor(m)) {
+        time_millis now = time_get_millis();
+        if (visitor_send_back_token != m->mp_expedition_id || now - visitor_send_back_asked > 5000) {
+            visitor_send_back_token = m->mp_expedition_id;
+            visitor_send_back_asked = now;
+            city_warning_show_custom(visitor_text("한 번 더 누르면 이 지원군을 주인에게 돌려보냅니다."), NEW_WARNING_SLOT);
+            return;
+        }
+        char command[48];
+        snprintf(command, sizeof(command), "dismiss %u", m->mp_expedition_id);
+        visitor_send_back_token = 0;
+        city_warning_show_custom(visitor_text(mp_client_command("army", command) ?
+            "지원군을 돌려보냅니다. 곧 도시를 떠납니다." : "이전 요청을 처리 중입니다. 잠시 뒤 다시 눌러 주세요."), NEW_WARNING_SLOT);
+        return;
+    }
     if (!m->in_distant_battle) {
         formation_legion_return_home(m);
     }
@@ -676,6 +728,10 @@ static void button_return_to_fort(const generic_button *button)
 
 static void button_empire_service(const generic_button *button)
 {
+    if (is_visitor(formation_get(data.active_legion.formation_id))) {
+        city_warning_show_custom(visitor_text("다른 플레이어의 지원군은 황제에게 보낼 수 없습니다."), NEW_WARNING_SLOT);
+        return;
+    }
     formation_toggle_empire_service(data.active_legion.formation_id);
     formation_calculate_figures();
 }

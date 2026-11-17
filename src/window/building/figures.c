@@ -1,4 +1,7 @@
 #include "figures.h"
+#include "multiplayer/transport.h"
+#include "core/encoding.h"
+#include <stdio.h>
 
 #include "assets/assets.h"
 #include "building/building.h"
@@ -175,6 +178,24 @@ static void draw_trader(building_info_context *c, figure *f)
     image_draw(big_people, c->x_offset + 28, c->y_offset + 83, COLOR_MASK_NONE, SCALE_NONE);
     lang_text_draw(65, f->name, c->x_offset + 90, c->y_offset + 79, FONT_LARGE_BROWN);
 
+    if (f->mp_contract_id) {
+        uint8_t text[512];char line[256];
+        encoding_from_utf8(f->type==FIGURE_TRADE_SHIP?"플레이어 교역선":f->type==FIGURE_DOCKER?"플레이어 교역 부두 노동자":f->mp_source?"플레이어 출발 상단":"플레이어 교역 상단",text,sizeof(text));
+        text_draw(text,c->x_offset+90,c->y_offset+110,FONT_NORMAL_BROWN,0);
+        const char *state=f->action_state==MP_CARAVAN_UNLOAD?(f->mp_source?"물품 수집 중":"하역 중"):
+            f->action_state==MP_CARAVAN_READY?(f->mp_source?"수집 완료 / 선적 대기":"도착 완료 / 정산 대기"):
+            f->action_state==MP_CARAVAN_DEPART?"선적 후 출구로 이동 중":
+            f->action_state==MP_CARAVAN_DEPARTED?"출구 도착 / 출발 확인 대기":
+            f->action_state==MP_CARAVAN_EXIT?"귀환 중":
+            f->action_state==MP_CARAVAN_FAILED?"운송 중단":f->type==FIGURE_TRADE_SHIP?"선창으로 이동 중":f->action_state==247?"선창으로 복귀 중":"저장소로 이동 중";
+        snprintf(line,sizeof(line),"거래 #%u / %d포대 / %s",f->mp_contract_id,f->loads_sold_or_carrying,state);
+        encoding_from_utf8(line,text,sizeof(text));
+        text_draw_ellipsized(text,c->x_offset+90,c->y_offset+135,350,FONT_NORMAL_BROWN,0);
+        image_draw(resource_get_data(f->resource_id)->image.icon,c->x_offset+40,c->y_offset+175,COLOR_MASK_NONE,SCALE_NONE);
+        encoding_from_utf8(f->mp_source?"방문을 마치면 물품을 선적 화물로 보관합니다.":"도착과 하역 후 재고와 대금을 함께 정산합니다.",text,sizeof(text));
+        text_draw_ellipsized(text,c->x_offset+75,c->y_offset+180,365,FONT_NORMAL_BROWN,0);
+        return;
+    }
     const empire_city *city = empire_city_get(f->empire_city_id);
     int width = lang_text_draw(64, f->type, c->x_offset + 90, c->y_offset + 110, FONT_NORMAL_BROWN);
     const uint8_t *city_name = empire_city_get_name(city);
@@ -724,7 +745,7 @@ static void draw_figure_info(building_info_context *c, int figure_id)
     figure *f = figure_get(figure_id);
     int type = f->type;
     if (type == FIGURE_TRADE_CARAVAN || type == FIGURE_TRADE_CARAVAN_DONKEY ||
-        type == FIGURE_TRADE_SHIP || type == FIGURE_NATIVE_TRADER) {
+        type == FIGURE_TRADE_SHIP || type == FIGURE_NATIVE_TRADER || (type == FIGURE_DOCKER && f->mp_contract_id)) {
         draw_trader(c, f);
     } else if (type >= FIGURE_ENEMY43_SPEAR && type <= FIGURE_ENEMY53_AXE) {
         draw_enemy(c, f);

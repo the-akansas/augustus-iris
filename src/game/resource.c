@@ -360,7 +360,9 @@ int resource_total_food_mapped(void)
 void production_rates_save(buffer *buf)
 {
     int buf_size = sizeof(uint16_t) * RESOURCE_ALL;
-    uint8_t *buf_data = malloc(buf_size);
+    /* The historical payload includes unused trailing bytes (RESOURCE_MIN > 0).
+       Keep its size for compatibility, but never serialize allocator contents. */
+    uint8_t *buf_data = calloc(1, buf_size);
     buffer_init(buf, buf_data, buf_size);
     
     for (resource_type resource = RESOURCE_MIN; resource < RESOURCE_ALL; resource++) {

@@ -1,4 +1,5 @@
 #include "depot.h"
+#include "multiplayer/post_logistics.h"
 
 #include "assets/assets.h"
 #include "building/granary.h"
@@ -113,13 +114,9 @@ static int is_order_condition_satisfied(const order *current_order)
     if (!building_is_active(src) || !building_is_active(dst)) {
         return 0;
     }
-    int src_amount = src->type == BUILDING_GRANARY ?
-        building_granary_get_amount(src, current_order->resource_type) :
-        building_warehouse_get_amount(src, current_order->resource_type);
+    int src_amount = building_storage_get_amount(src, current_order->resource_type);
 
-    int dst_amount = dst->type == BUILDING_GRANARY ?
-        building_granary_get_amount(dst, current_order->resource_type) :
-        building_warehouse_get_amount(dst, current_order->resource_type);
+    int dst_amount = building_storage_get_amount(dst, current_order->resource_type);
     if (src_amount == 0) {
         return 0;
     }
@@ -136,6 +133,7 @@ static int is_order_condition_satisfied(const order *current_order)
 
 static int storage_remove_resource(building *b, int resource, int amount)
 {
+    if(b->type==BUILDING_PLAYER_TRADE_POST)return mp_post_take(b,resource,amount);
     if (b->type == BUILDING_GRANARY) {
         return building_granary_try_remove_resource(b, resource, amount);
     } else if (b->type == BUILDING_WAREHOUSE) {
@@ -382,9 +380,7 @@ void figure_depot_cartpusher_action(figure *f)
                 }
 
                 // Depot cartpusher waits if not enough goods
-                int src_amount = src->type == BUILDING_GRANARY ?
-                    building_granary_get_amount(src, b->data.depot.current_order.resource_type) :
-                    building_warehouse_get_amount(src, b->data.depot.current_order.resource_type);
+                int src_amount = building_storage_get_amount(src, b->data.depot.current_order.resource_type);
                 int condition_type = b->data.depot.current_order.condition.condition_type;
                 int threshold = b->data.depot.current_order.condition.threshold;
                 if ((condition_type == ORDER_CONDITION_SOURCE_HAS_MORE_THAN && src_amount < threshold) ||
@@ -395,6 +391,12 @@ void figure_depot_cartpusher_action(figure *f)
                 // loading TODO upgradable?
                 int capacity = resource_is_food(b->data.depot.current_order.resource_type) ?
                     DEPOT_CART_PUSHER_FOOD_CAPACITY : DEPOT_CART_PUSHER_OTHER_CAPACITY;
+                building *post_dst=building_get(b->data.depot.current_order.dst_storage_id);
+                if(post_dst->type==BUILDING_PLAYER_TRADE_POST){
+                    int need=mp_post_inbound_need(post_dst,b->data.depot.current_order.resource_type,f);
+                    if(capacity>need)capacity=need;
+                    if(capacity<=0)break;
+                }
                 int amount_loaded = storage_remove_resource(src, b->data.depot.current_order.resource_type, capacity);
                 if (amount_loaded > 0) {
                     city_health_dispatch_sickness(f);

@@ -1,0 +1,16 @@
+{
+ "name": "로마",
+ "title": "로마 — 위대한 제국의 수도",
+ "description": "위대한 황제께서 거처하시며 온 세상은 그의 발밑에 있습니다. 당신은 그의 명령에 복종합니다. 지금으로서는 그렇습니다.",
+ "facts": "고정 수도 · 플레이 도시 아님",
+ "facts_detail": "위치가 고정된 지점이며 지형이 없습니다. 옮기거나 지울 수 없고 플레이 자리로 고를 수 없습니다. 참가 인원과 교역 상대에 들어가지 않습니다.",
+ "x": 768,
+ "y": 496,
+ "keep_clear": 24,
+ "icon": "Empire_Icon_Roman_05",
+ "icon_atlas": "assets/Graphics/ui.xml",
+ "icon_file": "assets/Graphics/UI/Empire_Icon_Roman_05.png",
+ "evidence": "원본 Valentia.map의 로마(도시 이름 0번) 오브젝트 좌상단 (752,480)에 시나리오 좌표 규칙(+16)을 적용한 값. 제국지도 그림 32종은 모두 같은 그림이고, 이탈리아 중부에서 덧칠로 비워 둔 자리(x 757~780, y 474~497)와 일치한다.",
+ "other_original": "원본 Tarraco.map은 같은 로마를 (752,504), 즉 (768,520)에 두었다. 덧칠 자리보다 아래라 기본값으로 쓰지 않는다. c3.emp 캠페인 제국지도에는 로마 오브젝트가 없다.",
+ "icon_source": "Augustus 자산 UI/Empire_Icon_Roman_05 (ui.xml 주석: Empire map icon for the City of Rome), CC BY-SA 3.0"
+}

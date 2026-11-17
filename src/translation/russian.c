@@ -32,9 +32,9 @@ static translation_string all_strings[] = {
     {TR_CONFIG_YOU_WILL_LOSE_YOUR_HOTKEYS, "Вы потеряете все свои пользовательские клавиши."},
     {TR_CONFIG_TITLE, "Настройки Augustus"},
     {TR_CONFIG_HEADER_GENERAL, "Общие настройки"},
-    {TR_CONFIG_HEADER_UI_CHANGES, "Интерфейс пользователя"},
+    {TR_CONFIG_HEADER_UI_CHANGES, "Интерфейс"},
     {TR_CONFIG_HEADER_GAMEPLAY_CHANGES, "Сложность"},
-    {TR_CONFIG_HEADER_CITY_MANAGEMENT_CHANGES, "Городское управление"},
+    {TR_CONFIG_HEADER_CITY_MANAGEMENT_CHANGES, "Управление"},
     {TR_CONFIG_LANGUAGE_LABEL, "Язык:"},
     {TR_CONFIG_LANGUAGE_DEFAULT, "(по умолчанию)"},
     {TR_CONFIG_DEFAULT_PLAYER_NAME, "Имя игрока по умолчанию:"},
@@ -729,7 +729,7 @@ static translation_string all_strings[] = {
     {TR_RETURN_ALL_TO_FORT, "Вернуть всех"},
     {TR_TOOLTIP_ADVISOR_ENTERTAINMENT_GAMES_BUTTON, "Информация об играх"},
     {TR_WINDOW_BUILDING_GOVERNMENT_LARGE_STATUE_WATER_WARNING, "Эта статуя выглядит потрясающе, но с работающим фонтаном она выглядела бы еще более грандиозно, если бы мы обеспечили ей доступ к воде."},
-    {TR_OPTION_MENU_APPLY, "Применить"},
+    {TR_OPTION_MENU_APPLY, "Принять"},
     {TR_OPTION_MENU_COST, "Это будет стоить"},
     {TR_FIGURE_TYPE_LOOTER, "Мародер"},
     {TR_FIGURE_TYPE_ROBBER, "Грабитель"},
@@ -2397,6 +2397,7 @@ static translation_string all_strings[] = {
     {TR_EDITOR_TOOL_BEACH, "Пляж"},
     {TR_TERRAIN_BEACH, "Пляж"},
     {TR_TERRAIN_BEACH_DESC, "Пляж с мелким песком. Радует глаз и привлекает любителей неспешных прогулок вдоль берега. Он также служит богатым источником песка и глины для города."},
+    {TR_CONFIG_MP_LANGUAGE, "Язык интерфейса"},
 };
 
 void translation_russian(const translation_string **strings, int *num_strings)

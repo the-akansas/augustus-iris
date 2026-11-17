@@ -1,3 +1,5 @@
+#include "multiplayer/clock.h"
+#include "multiplayer/chat.h"
 #include "settings.h"
 
 #include "city/constants.h"
@@ -263,11 +265,12 @@ void setting_reset_sound(int type, int enabled, int volume)
 
 int setting_game_speed(void)
 {
-    return data.game_speed;
+    return mp_clock_active()?mp_clock_speed():data.game_speed;
 }
 
 int setting_set_game_speed(int speed)
 {
+    if(mp_clock_active())return mp_client_speed(speed);
     game_speed_get_index(speed); // validate speed
     data.game_speed = speed;
     return 1;
@@ -275,6 +278,7 @@ int setting_set_game_speed(int speed)
 
 void setting_decrease_game_speed(void)
 {
+    if(mp_clock_active()){mp_client_speed(mp_clock_speed()-10);return;}
     int index = game_speed_get_index(data.game_speed);
     if (index > 0) {
         index--;
@@ -284,6 +288,7 @@ void setting_decrease_game_speed(void)
 
 void setting_increase_game_speed(void)
 {
+    if(mp_clock_active()){mp_client_speed(mp_clock_speed()+10);return;}
     int index = game_speed_get_index(data.game_speed);
     if (index < TOTAL_GAME_SPEEDS - 1) {
         index++;
@@ -353,21 +358,23 @@ void setting_toggle_monthly_autosave(void)
 
 int setting_gods_enabled(void)
 {
-    return data.gods_enabled;
+    return config_room_active()?config_room_value(1):data.gods_enabled;
 }
 
 void setting_toggle_gods_enabled(void)
 {
+    if(config_room_active())return;
     data.gods_enabled = data.gods_enabled ? 0 : 1;
 }
 
 set_difficulty setting_difficulty(void)
 {
-    return data.difficulty;
+    return config_room_active()?config_room_value(0):data.difficulty;
 }
 
 void setting_increase_difficulty(void)
 {
+    if(config_room_active())return;
     if (data.difficulty >= DIFFICULTY_VERY_HARD) {
         data.difficulty = DIFFICULTY_VERY_HARD;
     } else {
@@ -377,6 +384,7 @@ void setting_increase_difficulty(void)
 
 void setting_decrease_difficulty(void)
 {
+    if(config_room_active())return;
     if (data.difficulty <= DIFFICULTY_VERY_EASY) {
         data.difficulty = DIFFICULTY_VERY_EASY;
     } else {

@@ -1,0 +1,23 @@
+{
+  "version": "261113-rc1",
+  "internal_build": "261113",
+  "platform": "Windows x64",
+  "upstream_version": "4.0.0.1568",
+  "upstream_commit": "c0b2a5aefcd8f12331aad028002f101bf8c22417",
+  "entrypoint": "Augustus.exe",
+  "contains_personal_saves": false,
+  "contains_caesar3_base_data": false,
+  "channel": "preview",
+  "translation_revision": "ko-r1-network60",
+  "assets": "rebuilt from identical source with retained local XML corrections",
+  "diagnostics_revision": "diagnostics64",
+  "package_revision": "rc1",
+  "distribution": "tester-lite",
+  "corresponding_source_archive": "Augustus-MP-261113-rc1-sources.zip",
+  "modified_date": "2026-11-13",
+  "multiplayer_build": "261113",
+  "clock_credit_ticks": 64,
+  "autosave_default": "on, every 300 s (host; switching it off is kept)",
+  "clock_credit_ticks_high_speed": 192,
+  "clock_response_grace_ms": 5000
+}

@@ -1,6 +1,7 @@
 #include "button.h"
 
 #include "graphics/image.h"
+#include "graphics/renderer.h"
 #include "graphics/panel.h"
 
 void button_border_draw_colored(int x, int y, int width_pixels, int height_pixels, int has_focus, color_t color);
@@ -17,6 +18,9 @@ void button_border_draw(int x, int y, int width_pixels, int height_pixels, int h
 
 void button_border_draw_colored(int x, int y, int width_pixels, int height_pixels, int has_focus, color_t color)
 {
+    int raster_border = graphics_renderer()->begin_border_layer &&
+        graphics_renderer()->begin_border_layer(x, y, width_pixels, height_pixels);
+
     int width_blocks = width_pixels / BLOCK_SIZE;
     if (width_pixels % BLOCK_SIZE) {
         width_blocks++;
@@ -68,10 +72,14 @@ void button_border_draw_colored(int x, int y, int width_pixels, int height_pixel
             }
         }
     }
+    if (raster_border) graphics_renderer()->end_panel_layer();
 }
 
 void button_border_draw_colored_flush(int x, int y, int width_pixels, int height_pixels, int has_focus, color_t color)
 {
+    int raster_border = graphics_renderer()->begin_border_layer &&
+        graphics_renderer()->begin_border_layer(x, y, width_pixels, height_pixels);
+
     //papa crudelios please let me know if it should be a separate function or a fork inside button_border_draw_colored
     int width_blocks = width_pixels / BLOCK_SIZE;
     if (width_pixels % BLOCK_SIZE) {
@@ -121,4 +129,5 @@ void button_border_draw_colored_flush(int x, int y, int width_pixels, int height
             }
         }
     }
+    if (raster_border) graphics_renderer()->end_panel_layer();
 }

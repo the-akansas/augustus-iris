@@ -27,6 +27,8 @@ int asset_image_add_layer(asset_image *img,
     layer_invert_type invert, layer_rotate_type rotate, layer_isometric_part part, layer_mask mask);
 asset_image *asset_image_get_from_id(unsigned int image_id);
 void asset_image_unload(asset_image *img);
+
+extern int asset_image_keep_atlas_buffers;
 int asset_image_init_array(void);
 asset_image *asset_image_create(void);
 int asset_image_load_all(color_t **main_images, int *main_image_widths);

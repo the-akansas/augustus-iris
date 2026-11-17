@@ -1,0 +1,90 @@
+[
+  {
+    "name": "도자기",
+    "resource": 15
+  },
+  {
+    "name": "목재",
+    "resource": 7
+  },
+  {
+    "name": "가구",
+    "resource": 16
+  },
+  {
+    "name": "기름",
+    "resource": 17
+  },
+  {
+    "name": "포도주",
+    "resource": 18
+  },
+  {
+    "name": "철",
+    "resource": 10
+  },
+  {
+    "name": "대리석",
+    "resource": 11
+  },
+  {
+    "name": "무기",
+    "resource": 19
+  },
+  {
+    "name": "돈",
+    "resource": 0
+  },
+  {
+    "name": "밀",
+    "resource": 1
+  },
+  {
+    "name": "채소",
+    "resource": 2
+  },
+  {
+    "name": "과일",
+    "resource": 3
+  },
+  {
+    "name": "고기",
+    "resource": 4
+  },
+  {
+    "name": "생선",
+    "resource": 5
+  },
+  {
+    "name": "점토",
+    "resource": 6
+  },
+  {
+    "name": "올리브",
+    "resource": 8
+  },
+  {
+    "name": "포도",
+    "resource": 9
+  },
+  {
+    "name": "금",
+    "resource": 12
+  },
+  {
+    "name": "모래",
+    "resource": 13
+  },
+  {
+    "name": "돌",
+    "resource": 14
+  },
+  {
+    "name": "콘크리트",
+    "resource": 20
+  },
+  {
+    "name": "벽돌",
+    "resource": 21
+  }
+]

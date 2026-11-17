@@ -15,6 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Set only by the editor-picture worker mode (building_pictures.h), which reads the pixels back. */
+int asset_image_keep_atlas_buffers;
+
 #define ASSET_ARRAY_SIZE 2000
 
 static struct {
@@ -639,7 +642,7 @@ int asset_image_load_all(color_t **main_images, int *main_image_widths)
         }
     }
     image_packer_free(&packer);
-    graphics_renderer()->create_image_atlas(atlas_data, 1);
+    graphics_renderer()->create_image_atlas(atlas_data, !asset_image_keep_atlas_buffers);
 #endif
     return 1;
 }

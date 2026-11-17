@@ -21,15 +21,22 @@ static image_button clear_text_button = {
     0, 0, 39, 26, IB_NORMAL, GROUP_OK_CANCEL_SCROLL_BUTTONS, 4, button_clear_text, button_none, 0, 0, 1
 };
 
-void input_box_start(input_box *box)
+/* Layout can change after capture starts (dialog resize or mode switch).
+ * Drawing and hit testing must use the same current input box geometry. */
+static void update_clear_button(const input_box *box)
 {
-    int text_width = (box->width_blocks - 2) * BLOCK_SIZE - 35;
-    keyboard_start_capture(box->text, box->text_length, box->allow_punctuation, text_width, box->font, box->allowed_chars);
     clear_text_button.x_offset = box->x + box->width_blocks * 16;
     if (!box->put_clear_button_outside_box) {
         clear_text_button.x_offset -= CLEAR_BUTTON_WIDTH;
     }
     clear_text_button.y_offset = box->y + 3;
+}
+
+void input_box_start(input_box *box)
+{
+    int text_width = (box->width_blocks - 2) * BLOCK_SIZE - 35;
+    keyboard_start_capture(box->text, box->text_length, box->allow_punctuation, text_width, box->font, box->allowed_chars);
+    update_clear_button(box);
     system_keyboard_set_input_rect(box->x + screen_dialog_offset_x(), box->y + screen_dialog_offset_y(),
         box->width_blocks * BLOCK_SIZE - 35, box->height_blocks * BLOCK_SIZE);
     if (box->on_change) {
@@ -68,6 +75,7 @@ static int is_mouse_inside_input(const mouse *m, const input_box *box)
 
 void input_box_draw(const input_box *box)
 {
+    update_clear_button(box);
     inner_panel_draw(box->x, box->y, box->width_blocks, box->height_blocks);
     text_capture_cursor(keyboard_cursor_position(), keyboard_offset_start(), keyboard_offset_end());
     int text_x = box->x + 16;
@@ -89,6 +97,7 @@ void input_box_draw(const input_box *box)
 
 int input_box_handle_mouse(const mouse *m, const input_box *box)
 {
+    update_clear_button(box);
     text_to_clear = box->text;
     if (image_buttons_handle_mouse(m, 0, 0, &clear_text_button, 1, 0)) {
         return 1;

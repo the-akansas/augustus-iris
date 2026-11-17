@@ -1,3 +1,6 @@
+#include "core/encoding.h"
+#include "multiplayer/visit.h"
+#include "multiplayer/clock.h"
 #include "game.h"
 
 #include "assets/assets.h"
@@ -10,6 +13,7 @@
 #include "core/lang.h"
 #include "core/locale.h"
 #include "core/log.h"
+#include "core/mp_language.h"
 #include "core/random.h"
 #include "core/string.h"
 #include "editor/editor.h"
@@ -35,9 +39,31 @@
 #include "sound/city.h"
 #include "sound/system.h"
 #include "translation/translation.h"
+#include "core/dir.h"
+
+#include <string.h>
+
+/* Two folder names for the same folder: case and a trailing slash or backslash aside (Windows names). */
+static int same_folder(const char *a, const char *b)
+{
+    size_t la = strlen(a), lb = strlen(b);
+    while (la && (a[la - 1] == '/' || a[la - 1] == '\\')) la--;
+    while (lb && (b[lb - 1] == '/' || b[lb - 1] == '\\')) lb--;
+    if (la != lb) return 0;
+    for (size_t i = 0; i < la; i++) {
+        char x = a[i], y = b[i];
+        if (x == '\\') x = '/';
+        if (y == '\\') y = '/';
+        if (x >= 'A' && x <= 'Z') x += 32;
+        if (y >= 'A' && y <= 'Z') y += 32;
+        if (x != y) return 0;
+    }
+    return 1;
+}
 #include "window/editor/map.h"
 #include "window/logo.h"
 #include "window/main_menu.h"
+#include <stdlib.h>
 
 static void errlog(const char *msg)
 {
@@ -72,10 +98,26 @@ static encoding_type update_encoding(int is_editor)
         }
         language = saved_game_language;
     }
-    encoding_type encoding = encoding_determine(language);
+    encoding_type encoding;
+    if (!is_editor && lang_own_files_loaded()) {
+        /* The player's own texts converted to the Korean letter encoding (Augustus/c3_text_convert.py): keep the
+           Korean encoding and fonts, but the original language for its rules (word wrap, "Dn", dates). */
+        encoding = encoding_determine(LANGUAGE_KOREAN);
+        if (language == LANGUAGE_UNKNOWN || language == LANGUAGE_KOREAN) {
+            uint8_t russian[32], ukrainian[32];
+            encoding_from_utf8("\xd0\x9d\xd0\xbe\xd0\xb2\xd0\xb0\xd1\x8f \xd0\xb8\xd0\xb3\xd1\x80\xd0\xb0", russian, sizeof(russian)); /* Новая игра */
+            encoding_from_utf8("\xd0\x9d\xd0\xbe\xd0\xb2\xd0\xb0 \xd0\xb3\xd1\x80\xd0\xb0", ukrainian, sizeof(ukrainian)); /* Нова гра */
+            const uint8_t *new_game = lang_get_string(1, 1);
+            language = string_equals(russian, new_game) ? LANGUAGE_RUSSIAN :
+                string_equals(ukrainian, new_game) ? LANGUAGE_UKRAINIAN : LANGUAGE_ENGLISH;
+        }
+        locale_set_language(language);
+    } else {
+        encoding = encoding_determine(language);
+    }
     log_info("Detected encoding:", 0, encoding);
     font_set_encoding(encoding);
-    translation_load(language);
+    mp_language_load(language, encoding);
     return encoding;
 }
 
@@ -148,12 +190,37 @@ int game_init(void)
     if (missing_assets) {
         actions |= ACTION_SHOW_MESSAGE_MISSING_EXTRA_ASSETS;
     }
-    if (config_must_configure_user_directory()) {
-        actions |= ACTION_SETUP_USER_DIR;
-    } else if (!platform_file_manager_is_directory_writeable(pref_user_dir())) {
+    /* Envelope rule (user 2026-11-14): the first start never asks where personal files go. When no folder is
+     * recorded the game takes its own one (user-profile next to the executable, the folder the launcher names).
+     * Settings > user folder still lets the player move it later. */
+    /* Not in the engine worker (engine_main.c): with a user folder its built-in maps (Caesarea.map ...) were looked
+     * for in that folder's maps/ and every one failed (code 92), so the creator's preset list was rebuilt on every
+     * map or city choice, 30 s and more each time (user 2026-11-14). The worker reads them from the game data. */
+    const char *worker = getenv("AUGUSTUS_ENGINE_WORKER");
+    int own_folder = 0;
+    if ((config_must_configure_user_directory() || !*pref_user_dir()) && !(worker && worker[0] == '1')) {
+        const char *own = platform_user_path_recommend();
+        if (own && *own) {
+            pref_save_user_dir(own);
+            own_folder = 1;
+        }
+    }
+    if (!platform_file_manager_is_directory_writeable(pref_user_dir())) {
         actions |= ACTION_SHOW_MESSAGE_USER_DIR_NOT_WRITABLE;
     } else {
         platform_user_path_create_subdirectories();
+        /* The folder taken above starts empty: the city construction kit lists its maps from that folder's
+         * scenarios/, so the list was empty (Caesarea.map ... stay in the Caesar III folder). Bring what the game
+         * would bring when the player picks a folder himself (settings: the same copy, nothing overwritten).
+         * Also once for a folder taken by an earlier version of this rule, while its scenarios/ has no map
+         * (user 2026-11-15). Never in the engine worker (it reads the game data folder). */
+        if (!(worker && worker[0] == '1') && *pref_user_dir() &&
+            (own_folder || !dir_find_files_with_extension_at_location(PATH_LOCATION_SCENARIO, "map")->num_files)) {
+            const char *own = platform_user_path_recommend();
+            if (own_folder || (own && same_folder(own, pref_user_dir()))) {
+                platform_user_path_copy_files("", 0);
+            }
+        }
     }
     if (config_get(CONFIG_UI_SHOW_INTRO_VIDEO)) {
         actions |= ACTION_SHOW_INTRO_VIDEOS;
@@ -226,10 +293,12 @@ int game_reload_language(void)
 
 void game_run(void)
 {
+    if (mp_visit_active()) return; // A completed snapshot must never simulate or save.
     game_animation_update();
     int num_ticks = game_speed_get_elapsed_ticks();
     for (int i = 0; i < num_ticks; i++) {
         game_tick_run();
+        mp_clock_did_tick();
         game_file_write_mission_saved_game();
 
         if (window_is_invalid()) {
@@ -241,7 +310,7 @@ void game_run(void)
 void game_draw(void)
 {
     window_draw(0);
-    sound_city_play();
+    if (!mp_visit_active()) sound_city_play();
 }
 
 void game_display_fps(int fps)

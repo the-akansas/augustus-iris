@@ -72,6 +72,7 @@ void figure_create_missile(int figure_id, int x, int y, int x_dst, int y_dst, fi
 
 static int is_citizen(figure *f)
 {
+    if (figure_is_enemy(f)) return 0;
     const figure_properties *target_props = figure_properties_for_type(f->type);
     const figure_category category = target_props->category;
     if (f->action_state != FIGURE_ACTION_149_CORPSE) {

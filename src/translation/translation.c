@@ -6,7 +6,9 @@
 
 #include <string.h>
 
-#define BUFFER_SIZE 100000
+/* Multilingual build: Russian, German ... run on the Korean (CP949) encoding, where every non-ASCII letter takes two
+ * bytes; the Russian table alone needs about 200 kB there. */
+#define BUFFER_SIZE 400000
 
 static struct {
     uint8_t *strings[TRANSLATION_MAX_KEY];

@@ -1,4 +1,5 @@
 #include "trader.h"
+#include "multiplayer/transport.h"
 
 #include "building/building.h"
 #include "building/caravanserai.h"
@@ -474,7 +475,7 @@ void figure_trade_caravan_action(figure *f)
 
     figure_image_increase_offset(f, 12);
     f->cart_image_id = 0;
-    switch (f->action_state) {
+    if (!mp_transport_action(f)) switch (f->action_state) {
         case FIGURE_ACTION_150_ATTACK:
             figure_combat_handle_attack(f);
             break;
@@ -783,7 +784,7 @@ void figure_trade_ship_action(figure *f)
     f->is_boat = 1;
     figure_image_increase_offset(f, 12);
     f->cart_image_id = 0;
-    switch (f->action_state) {
+    if (!mp_transport_action(f)) switch (f->action_state) {
         case FIGURE_ACTION_150_ATTACK:
             figure_combat_handle_attack(f);
             break;

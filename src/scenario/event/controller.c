@@ -447,7 +447,8 @@ static void formulas_load_state(buffer *buf)
 
     array_advance(scenario_formulas); // Advance once to skip index 0, which is reserved for invalid formulas
 
-    for (size_t i = 0; i < array_size; ++i) {
+    // Array size includes the reserved zero slot, which has no saved record.
+    for (size_t i = 1; i < array_size; ++i) {
 
         scenario_formula_t *formula = array_advance(scenario_formulas);
 
@@ -496,7 +497,8 @@ static void texts_load_state(buffer *buf)
 
     array_advance(scenario_texts); // Advance once to skip index 0, which is reserved for invalid texts
 
-    for (size_t i = 0; i < array_size; ++i) {
+    // Array size includes the reserved zero slot, which has no saved record.
+    for (size_t i = 1; i < array_size; ++i) {
 
         scenario_text_t *text = array_advance(scenario_texts);
 

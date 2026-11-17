@@ -62,6 +62,8 @@ void formations_clear(void)
 
 void formation_clear(int formation_id)
 {
+    /* Retain a tombstone while troops are away: IDs must not be recycled. */
+    if (array_item(formations, formation_id)->mp_expedition_id) return;
     array_item(formations, formation_id)->in_use = 0;
     array_trim(formations);
 }
@@ -110,7 +112,7 @@ void formation_refresh_regalia(void)
     formation_release_all_legion_regalia();
     for (int i = 1; i < formation_count(); i++) {
         formation *m = formation_get(i);
-        if (m->in_use && m->is_legion) {
+        if (m->in_use && m->is_legion && !m->mp_expedition_role) {
             formation_assign_available_legion_regalia(m, m->legion_id);
         }
     }
@@ -227,6 +229,7 @@ void formation_set_selected(int formation_id)
 
 void formation_toggle_empire_service(int formation_id)
 {
+    if (array_item(formations, formation_id)->mp_expedition_id) return;
     array_item(formations, formation_id)->empire_service ^= 1;
 }
 
@@ -394,7 +397,7 @@ void formation_calculate_legion_totals(void)
     for (unsigned int i = 1; i < formations.size; i++) {
         formation *m = formation_get(i);
         if (m->in_use) {
-            if (m->is_legion) {
+            if (m->is_legion && !m->mp_expedition_role) {
                 data.id_last_legion = i;
                 data.num_legions++;
                 if (m->figure_type == FIGURE_FORT_LEGIONARY) {
@@ -418,7 +421,7 @@ int formation_get_num_legions(void)
     formation *m;
     array_foreach(formations, m)
     {
-        if (m->in_use && m->is_legion) {
+        if (m->in_use && m->is_legion && !m->mp_expedition_role) {
             total++;
         }
     }
@@ -443,7 +446,7 @@ int formation_for_legion(int legion_index)
     formation *m;
     array_foreach(formations, m)
     {
-        if (m->in_use && m->is_legion) {
+        if (m->in_use && m->is_legion && !m->mp_expedition_role) {
             if (index++ == legion_index) {
                 return m->id;
             }
@@ -454,6 +457,7 @@ int formation_for_legion(int legion_index)
 
 void formation_change_morale(formation *m, int amount)
 {
+    if (m->mp_expedition_id && !m->mp_expedition_role) return;
     int max_morale;
     if (m->figure_type == FIGURE_FORT_LEGIONARY) {
         max_morale = m->has_military_training ? 90 : 80;
@@ -524,7 +528,7 @@ void formation_update_monthly_morale_deployed(void)
     formation *f;
     array_foreach(formations, f)
     {
-        if (f->in_use != 1 || f->is_herd) {
+        if (f->in_use != 1 || f->is_herd || f->mp_expedition_id) {
             continue;
         }
         if (f->is_legion) {
@@ -556,7 +560,7 @@ static void update_morale_for_mess_hall(void)
     for (unsigned int i = 1; i < formations.size; i++) {
         formation *f = formation_get(i);
         int max_morale = 0;
-        if (f->in_use != 1 || !f->is_legion) {
+        if (f->in_use != 1 || !f->is_legion || f->mp_expedition_id) {
             continue;
         }
 
@@ -582,7 +586,7 @@ void formation_update_monthly_morale_at_rest(void)
 {
     for (unsigned int i = 1; i < formations.size; i++) {
         formation *m = formation_get(i);
-        if (m->in_use != 1 || m->is_herd) {
+        if (m->in_use != 1 || m->is_herd || m->mp_expedition_id) {
             continue;
         }
         if (m->is_legion) {
@@ -800,7 +804,7 @@ void formation_calculate_figures(void)
             } else {
                 // enemy
                 if (m->num_figures <= 0) {
-                    formation_clear(m->id);
+                    if (!m->mp_expedition_id) formation_clear(m->id);
                 } else {
                     enemy_army_totals_add_enemy_formation(m->num_figures);
                 }
@@ -891,7 +895,7 @@ void formation_update_all(int second_time)
 void formations_save_state(buffer *buf, buffer *totals)
 {
     int buf_size = 4 + formations.size * CURRENT_BUFFER_SIZE_PER_FORMATION;
-    uint8_t *buf_data = malloc(buf_size);
+    uint8_t *buf_data = calloc(1, buf_size);
     memset(buf_data, 0, buf_size);
     buffer_init(buf, buf_data, buf_size);
     buffer_write_i32(buf, CURRENT_BUFFER_SIZE_PER_FORMATION);
@@ -959,7 +963,9 @@ void formations_save_state(buffer *buf, buffer *totals)
         buffer_write_u8(buf, f->herd_wolf_spawn_delay);
         buffer_write_u8(buf, f->herd_direction);
         buffer_write_i32(buf, f->target_formation_id);
-        buffer_skip(buf, 13);
+        buffer_write_u32(buf, f->mp_expedition_id);
+        buffer_write_u8(buf, f->mp_expedition_role);
+        buffer_skip(buf, 8);
         buffer_write_i16(buf, f->invasion_sequence);
     }
     buffer_write_i32(totals, data.id_last_in_use);
@@ -1021,7 +1027,9 @@ void formations_load_state(buffer *buf, buffer *totals, int version)
         f->destination_building_id = buffer_read_i16(buf);
         f->standard_figure_id = buffer_read_i16(buf);
         f->is_legion = buffer_read_u8(buf);
-        f->mess_hall_max_morale_modifier = buffer_read_u8(buf);
+        // The persisted byte also carries negative mess-hall penalties (-30..15).
+        // Decode its signed value without changing the existing save layout.
+        f->mess_hall_max_morale_modifier = buffer_read_i8(buf);
         if (version <= SAVE_GAME_LAST_10_LEGIONS_MAX) {
             if (f->is_legion) {
                 f->legion_id = f->legion_id + f->is_legion; // 1-based index for legions
@@ -1068,7 +1076,17 @@ void formations_load_state(buffer *buf, buffer *totals, int version)
         f->herd_wolf_spawn_delay = buffer_read_u8(buf);
         f->herd_direction = buffer_read_u8(buf);
         f->target_formation_id = buffer_read_i32(buf);
-        buffer_skip(buf, 13);
+        f->mp_expedition_id = 0;
+        f->mp_expedition_role = 0;
+        if (version > SAVE_GAME_LAST_NO_MP_EXPEDITION) {
+            f->mp_expedition_id = buffer_read_u32(buf);
+            if (version > SAVE_GAME_LAST_NO_MP_VISITORS) {
+                f->mp_expedition_role = buffer_read_u8(buf);
+                buffer_skip(buf, 8);
+            } else buffer_skip(buf, 9);
+        } else {
+            buffer_skip(buf, 13);
+        }
         f->invasion_sequence = buffer_read_i16(buf);
 
         if (formation_buf_size > CURRENT_BUFFER_SIZE_PER_FORMATION) {

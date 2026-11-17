@@ -1,3 +1,4 @@
+#include "multiplayer/route_post.h"
 #include "construction_building.h"
 
 #include "assets/assets.h"
@@ -512,6 +513,11 @@ static void add_to_map(int type, building *b, int size, int orientation, int wat
         case BUILDING_HIGHWAY:
             add_building(b);
             break;
+        case BUILDING_PLAYER_TRADE_POST:
+            b->subtype.orientation=mp_route_build_peer();
+            b->storage_id=building_storage_create(b->id);
+            add_building(b);
+            break;
         case BUILDING_DEPOT:
             add_depot(b);
             break;
@@ -580,6 +586,7 @@ int building_construction_fill_vacant_lots(grid_slice *area)
 
 int building_construction_place_building(building_type type, int x, int y, int exact_coordinates)
 {
+    if (type==BUILDING_PLAYER_TRADE_POST && !mp_route_build_peer()) return 0;
     int grid_offset = map_grid_offset(x, y);
 
     int terrain_mask = TERRAIN_ALL;

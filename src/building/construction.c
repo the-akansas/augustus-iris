@@ -1,3 +1,4 @@
+#include "building/tile_repair.h"
 #include "construction.h"
 
 #include "assets/assets.h"
@@ -762,6 +763,11 @@ void building_construction_start(int x, int y, int grid_offset)
     data.start.x = data.end.x = x;
     data.start.y = data.end.y = y;
 
+    if (data.type == BUILDING_CLEAR_LAND || data.type == BUILDING_REPAIR_LAND) {
+        /* Before the undo copy of the map is taken: tiles of missing buildings would otherwise come back with it
+         * and the tool would act on the wrong building (building/tile_repair.c, 2026-11-14). */
+        building_tile_repair_all();
+    }
     if (game_undo_start_build(data.type)) {
         data.in_progress = 1;
         int can_start = 1;
@@ -1387,6 +1393,10 @@ void building_construction_place(void)
     city_finance_process_construction(placement_cost);
     building_construction_auto_clear_finalize();
     game_undo_finish_build(placement_cost);
+    /* One dedicated post per partner city: release the build cursor after it is placed. */
+    if (type == BUILDING_PLAYER_TRADE_POST) {
+        building_construction_clear_type();
+    }
 }
 
 static void set_warning(int *warning_id, int warning)

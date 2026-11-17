@@ -1,0 +1,387 @@
+[
+  {
+    "tab": "난이도",
+    "key": "RANGE_DIFFICULTY",
+    "name": "난이도:",
+    "translation": "TR_CONFIG_DIFFICULTY",
+    "native": -1,
+    "maximum": 4,
+    "default": 2
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_ORIGINAL_GODS_EFFECTS",
+    "name": "신의 축복/저주 활성화",
+    "translation": "TR_CONFIG_GODS_EFFECTS",
+    "native": -2,
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_GP_CH_JEALOUS_GODS",
+    "name": "신들의 질투 비활성화",
+    "translation": "TR_CONFIG_JEALOUS_GODS",
+    "native": "CONFIG_GP_CH_JEALOUS_GODS",
+    "maximum": 1,
+    "default": 0
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_GP_CH_GLOBAL_LABOUR",
+    "name": "도시 전체에서 노동력 공유",
+    "translation": "TR_CONFIG_GLOBAL_LABOUR",
+    "native": "CONFIG_GP_CH_GLOBAL_LABOUR",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_GP_CH_RETIRE_AT_60",
+    "name": "시민의 은퇴 나이를 50세에서 60세로 연장",
+    "translation": "TR_CONFIG_RETIRE_AT_60",
+    "native": "CONFIG_GP_CH_RETIRE_AT_60",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_GP_CH_FIXED_WORKERS",
+    "name": "노동자 인구를 평민 인구의 45%로 고정",
+    "translation": "TR_CONFIG_FIXED_WORKERS",
+    "native": "CONFIG_GP_CH_FIXED_WORKERS",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_GP_CH_WOLVES_BLOCK",
+    "name": "늑대 근처에 건물 건설 불가",
+    "translation": "TR_CONFIG_WOLVES_BLOCK",
+    "native": "CONFIG_GP_CH_WOLVES_BLOCK",
+    "maximum": 1,
+    "default": 0
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_GP_CH_AUTO_KILL_ANIMALS",
+    "name": "시민들이 자동으로 무해한 짐승을 사냥",
+    "translation": "TR_CONFIG_AUTO_KILL_ANIMALS",
+    "native": "CONFIG_GP_CH_AUTO_KILL_ANIMALS",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_GP_CH_MULTIPLE_BARRACKS",
+    "name": "여러 개의 병영 건설 허용",
+    "translation": "TR_CONFIG_MULTIPLE_BARRACKS",
+    "native": "CONFIG_GP_CH_MULTIPLE_BARRACKS",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_GP_CH_RANDOM_COLLAPSES_TAKE_MONEY",
+    "name": "점토 채굴장의 침수 및 광산 붕괴 대신 자금 소모",
+    "translation": "TR_CONFIG_RANDOM_COLLAPSES_TAKE_MONEY",
+    "native": "CONFIG_GP_CH_RANDOM_COLLAPSES_TAKE_MONEY",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "난이도",
+    "key": "CONFIG_GP_CH_DISABLE_INFINITE_WOLVES_SPAWNING",
+    "name": "늑대가 끝없이 나타나지 않음",
+    "translation": "TR_CONFIG_GP_CH_DISABLE_INFINITE_WOLVES_SPAWNING",
+    "native": "CONFIG_GP_CH_DISABLE_INFINITE_WOLVES_SPAWNING",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "난이도",
+    "key": "RANGE_MAX_GRAND_TEMPLES",
+    "name": "도시당 대성전 최대 개수:",
+    "translation": "TR_CONFIG_MAX_GRAND_TEMPLES",
+    "native": "CONFIG_GP_CH_MAX_GRAND_TEMPLES",
+    "maximum": 5,
+    "default": 5
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_NO_SUPPLIER_DISTRIBUTION",
+    "name": "물품을 사러 가는 시장 상인은 주택에 물품을 나눠주지 않음",
+    "translation": "TR_CONFIG_NO_SUPPLIER_DISTRIBUTION",
+    "native": "CONFIG_GP_CH_NO_SUPPLIER_DISTRIBUTION",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_GRANARIES_GET_DOUBLE",
+    "name": "다른 곡물창고에서 식량을 가져오는 수레의 운반량을 2배로",
+    "translation": "TR_CONFIG_GRANARIES_GET_DOUBLE",
+    "native": "CONFIG_GP_CH_GRANARIES_GET_DOUBLE",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_ALLOW_EXPORTING_FROM_GRANARIES",
+    "name": "곡물창고에서 무역상에게 수출 가능",
+    "translation": "TR_CONFIG_ALLOW_EXPORTING_FROM_GRANARIES",
+    "native": "CONFIG_GP_CH_ALLOW_EXPORTING_FROM_GRANARIES",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_FARMS_DELIVER_CLOSE",
+    "name": "농장과 선창은 가까운 곡물창고와 저장소로만 배달",
+    "translation": "TR_CONFIG_FARMS_DELIVER_CLOSE",
+    "native": "CONFIG_GP_CH_FARMS_DELIVER_CLOSE",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_WAREHOUSES_DONT_ACCEPT",
+    "name": "곡물창고와 저장소의 초기 설정을 '모든 품목 보관 불가'로 설정",
+    "translation": "TR_CONFIG_NOT_ACCEPTING_WAREHOUSES",
+    "native": "CONFIG_GP_CH_WAREHOUSES_DONT_ACCEPT",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_MARKETS_DONT_ACCEPT",
+    "name": "새로 건설한 시장은 모든 물품을 받지 않음",
+    "translation": "TR_CONFIG_NOT_ACCEPTING_MARKETS",
+    "native": "CONFIG_GP_CH_MARKETS_DONT_ACCEPT",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_DELIVER_ONLY_TO_ACCEPTING_GRANARIES",
+    "name": "농장과 선창이 '식량 입수'중인 곡물창고로 식량을 배달하지 않음",
+    "translation": "TR_CONFIG_DELIVER_ONLY_TO_ACCEPTING_GRANARIES",
+    "native": "CONFIG_GP_CH_DELIVER_ONLY_TO_ACCEPTING_GRANARIES",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_STORAGE_INCREMENT_4",
+    "name": "곡물창고/저장소/수레 창고의 수량을 4의 배수로 설정",
+    "translation": "TR_CONFIG_STORAGE_STEP_4",
+    "native": "CONFIG_GP_STORAGE_INCREMENT_4",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_ENABLE_GETTING_WHILE_STOCKPILED",
+    "name": "자원 비축 중에도 '가져오기' 허용",
+    "translation": "TR_CONFIG_ENABLE_GETTING_WHILE_STOCKPILED",
+    "native": "CONFIG_GP_CH_ENABLE_GETTING_WHILE_STOCKPILED",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_CART_DEPOT_ADVANCED",
+    "name": "수레 창고의 고급 운송 지시 사용",
+    "translation": "TR_CONFIG_ADVANCED_CART_DEPOT_OPTIONS",
+    "native": "CONFIG_GP_CH_CART_DEPOT_ADVANCED",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_STORAGE_REQUESTS_RESPECT_MAINTAIN",
+    "name": "황제의 요청에도 '반출 제한' 설정 적용",
+    "translation": "TR_CONFIG_GP_CH_STORAGE_REQUESTS_RESPECT_MAINTAIN",
+    "native": "CONFIG_GP_CH_STORAGE_REQUESTS_RESPECT_MAINTAIN",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_MARKET_RANGE",
+    "name": "시장 활동 범위 제한 사용",
+    "translation": "TR_CONFIG_ENABLE_MARKET_RANGE",
+    "native": "CONFIG_GP_CH_MARKET_RANGE",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_WAREHOUSES_GRANARIES_OVER_ROAD_PLACEMENT",
+    "name": "저장소와 곡물창고를 도로 위에 즉시 건설 가능",
+    "translation": "TR_CONFIG_WAREHOUSES_GRANARIES_OVER_ROAD_PLACEMENT",
+    "native": "CONFIG_GP_CH_WAREHOUSES_GRANARIES_OVER_ROAD_PLACEMENT",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_ROAMERS_DONT_SKIP_CORNERS",
+    "name": "배회형 일꾼이 도로의 모퉁이를 건너뛰지 않음",
+    "translation": "TR_CONFIG_ROAMERS_DONT_SKIP_CORNERS",
+    "native": "CONFIG_GP_CH_ROAMERS_DONT_SKIP_CORNERS",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CARAVANS_MOVE_OFF_ROAD",
+    "name": "무역상과 소달구지가 도로를 우선해서 이용하지 않음",
+    "translation": "TR_CONFIG_CARAVANS_MOVE_OFF_ROAD",
+    "native": "CONFIG_GP_CARAVANS_MOVE_OFF_ROAD",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_GETTING_GRANARIES_GO_OFFROAD",
+    "name": "다른 곡물창고에서 물품을 입수하는 수레꾼은 길이 없어도 이동 가능",
+    "translation": "TR_CONFIG_GETTING_GRANARIES_GO_OFFROAD",
+    "native": "CONFIG_GP_CH_GETTING_GRANARIES_GO_OFFROAD",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_GATES_DEFAULT_TO_PASS_ALL_WALKERS",
+    "name": "정원 출입문의 초기 설정을 '모든 보행자 통행 가능'으로 설정",
+    "translation": "TR_CONFIG_GATES_DEFAULT_TO_PASS_ALL_WALKERS",
+    "native": "CONFIG_GP_CH_GATES_DEFAULT_TO_PASS_ALL_WALKERS",
+    "maximum": 1,
+    "default": 0
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_GRANARY_DEFAULT_TO_PASS_ALL_WALKERS",
+    "name": "곡물창고의 기본 보행자 통행 설정을 '불가'로 지정",
+    "translation": "TR_CONFIG_GRANARY_DEFAULT_TO_PASS_ALL_WALKERS",
+    "native": "CONFIG_GP_CH_GRANARY_DEFAULT_TO_PASS_ALL_WALKERS",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_WAREHOUSE_DEFAULT_TO_PASS_ALL_WALKERS",
+    "name": "저장소의 기본 보행자 통행 설정을 '불가'로 지정",
+    "translation": "TR_CONFIG_WAREHOUSE_DEFAULT_TO_PASS_ALL_WALKERS",
+    "native": "CONFIG_GP_CH_WAREHOUSE_DEFAULT_TO_PASS_ALL_WALKERS",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_ALL_HOUSES_MERGE",
+    "name": "모든 주택 병합",
+    "translation": "TR_CONFIG_ALL_HOUSES_MERGE",
+    "native": "CONFIG_GP_CH_ALL_HOUSES_MERGE",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_PATRICIAN_DEVOLUTION_FIX",
+    "name": "귀족 주택이 퇴보할 때 건물 형태 유지",
+    "translation": "TR_CONFIG_PATRICIAN_DEVOLUTION_FIX",
+    "native": "CONFIG_GP_CH_PATRICIAN_DEVOLUTION_FIX",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_HOUSES_DONT_EXPAND_INTO_GARDENS",
+    "name": "주택이 정원 부지로 확장되지 않음",
+    "translation": "TR_CONFIG_HOUSES_DONT_EXPAND_INTO_GARDENS",
+    "native": "CONFIG_GP_CH_HOUSES_DONT_EXPAND_INTO_GARDENS",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_HOUSING_PRE_MERGE_VACANT_LOTS",
+    "name": "주택을 항상 2x2로 통합",
+    "translation": "TR_CONFIG_GP_CH_HOUSING_PRE_MERGE_VACANT_LOTS",
+    "native": "CONFIG_GP_CH_HOUSING_PRE_MERGE_VACANT_LOTS",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_HOUSING_DO_NOT_SPAWN_PLEBIANS",
+    "name": "주택에서 목적 없이 배회하는 평민 생성 안 함",
+    "translation": "TR_CONFIG_GP_CH_HOUSING_DO_NOT_SPAWN_PLEBIANS",
+    "native": "CONFIG_GP_CH_HOUSING_DO_NOT_SPAWN_PLEBIANS",
+    "maximum": 1,
+    "default": 0
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_HOUSING_DO_NOT_SPAWN_DOGS",
+    "name": "주택에서 돌아다니는 개 생성 안 함",
+    "translation": "TR_CONFIG_GP_CH_HOUSING_DO_NOT_SPAWN_DOGS",
+    "native": "CONFIG_GP_CH_HOUSING_DO_NOT_SPAWN_DOGS",
+    "maximum": 1,
+    "default": 0
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_ALWAYS_DESTROY_BRIDGES",
+    "name": "항상 다리 철거 허용",
+    "translation": "TR_CONFIG_GP_CH_ALWAYS_DESTROY_BRIDGES",
+    "native": "CONFIG_GP_CH_ALWAYS_DESTROY_BRIDGES",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_AUTO_CLEAR_TREES",
+    "name": "건물 배치 시 나무와 관목 자동 제거",
+    "translation": "TR_CONFIG_GP_CH_AUTO_CLEAR_TREES",
+    "native": "CONFIG_GP_CH_AUTO_CLEAR_TREES",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_TOWER_SENTRIES_GO_OFFROAD",
+    "name": "탑이 병영과 도로로 연결되어 있지 않아도 가동함",
+    "translation": "TR_CONFIG_TOWER_SENTRIES_GO_OFFROAD",
+    "native": "CONFIG_GP_CH_TOWER_SENTRIES_GO_OFFROAD",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_GP_CH_ENEMIES_RETREAT_FAST",
+    "name": "적군 퇴각 속도 2배",
+    "translation": "TR_CONFIG_GP_CH_ENEMIES_RETREAT_FAST",
+    "native": "CONFIG_GP_CH_ENEMIES_RETREAT_FAST",
+    "maximum": 1,
+    "default": 1
+  },
+  {
+    "tab": "도시 관리",
+    "key": "MULTIPLAYER_ALLOW_CHEATS",
+    "name": "치트 허용",
+    "maximum": 1,
+    "default": 0
+  },
+  {
+    "tab": "도시 관리",
+    "key": "CONFIG_UI_DRAW_WEATHER",
+    "name": "날씨 효과 표시 (비·눈·모래폭풍)",
+    "translation": "TR_CONFIG_DRAW_WEATHER",
+    "native": "CONFIG_UI_DRAW_WEATHER",
+    "maximum": 1,
+    "default": 0
+  }
+]

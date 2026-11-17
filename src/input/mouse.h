@@ -61,6 +61,7 @@ void mouse_center_cursor(void);
 void mouse_set_left_down(int down);
 
 void mouse_set_middle_down(int down);
+void mouse_cancel_middle_click(void);
 
 void mouse_set_right_down(int down);
 

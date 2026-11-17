@@ -5,6 +5,8 @@
 
 #define MAX_COMMAND_SIZE 64
 
+void game_cheat_reset(void);
+int game_cheat_allowed(void);
 void game_cheat_activate(void);
 
 int game_cheat_tooltip_enabled(void);

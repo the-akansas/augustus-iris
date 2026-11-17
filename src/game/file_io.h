@@ -56,3 +56,6 @@ int game_file_io_write_saved_game(const char *filename);
 int game_file_io_delete_saved_game(const char *filename);
 
 #endif // GAME_FILE_IO_H
+
+unsigned char *game_file_io_capture_view(unsigned *length);
+int game_file_io_apply_view(const unsigned char *data,unsigned length);

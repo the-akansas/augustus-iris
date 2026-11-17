@@ -14,13 +14,13 @@ static struct {
     dir_listing listing;
     int max_files;
     char *cased_filename;
-    char current_dir[FILE_NAME_MAX];
+    char current_dir[FILE_PATH_MAX];
 } data;
 
 static void allocate_listing_files(int min, int max)
 {
     for (int i = min; i < max; i++) {
-        data.listing.files[i].name = malloc(FILE_NAME_MAX * sizeof(char));
+        data.listing.files[i].name = malloc(FILE_PATH_MAX * sizeof(char));
         data.listing.files[i].name[0] = 0;
     }
 }
@@ -63,7 +63,7 @@ static int add_to_listing(const char *filename, long modified_time)
     if (data.listing.num_files >= data.max_files) {
         expand_dir_listing();
     }
-    snprintf(data.listing.files[data.listing.num_files].name, FILE_NAME_MAX, "%s", filename);
+    snprintf(data.listing.files[data.listing.num_files].name, FILE_PATH_MAX, "%s", filename);
     data.listing.files[data.listing.num_files].modified_time = modified_time;
     ++data.listing.num_files;
     return LIST_CONTINUE;
@@ -72,7 +72,7 @@ static int add_to_listing(const char *filename, long modified_time)
 const dir_listing *dir_find_files_with_extension(const char *dir, const char *extension)
 {
     clear_dir_listing();
-    snprintf(data.current_dir, FILE_NAME_MAX, "%s", dir);
+    snprintf(data.current_dir, FILE_PATH_MAX, "%s", dir);
     platform_file_manager_list_directory_contents(dir, TYPE_FILE, extension, add_to_listing);
     qsort(data.listing.files, data.listing.num_files, sizeof(dir_entry), compare_lower);
     return &data.listing;
@@ -86,7 +86,7 @@ const dir_listing *dir_find_files_with_extension_at_location(int location, const
 const dir_listing *dir_find_all_subdirectories(const char *dir)
 {
     clear_dir_listing();
-    snprintf(data.current_dir, FILE_NAME_MAX, "%s", dir);
+    snprintf(data.current_dir, FILE_PATH_MAX, "%s", dir);
     platform_file_manager_list_directory_contents(dir, TYPE_DIR, 0, add_to_listing);
     qsort(data.listing.files, data.listing.num_files, sizeof(dir_entry), compare_lower);
     return &data.listing;
@@ -124,18 +124,18 @@ static void move_left(char *str)
 
 static const char *get_case_corrected_file(const char *dir, const char *filepath)
 {
-    static char corrected_filename[2 * FILE_NAME_MAX];
-    char backup[2 * FILE_NAME_MAX];
+    static char corrected_filename[2 * FILE_PATH_MAX];
+    char backup[2 * FILE_PATH_MAX];
     size_t backup_offset = 0;
 
     // Prevent writing to the same buffer
-    if (filepath >= corrected_filename && filepath < corrected_filename + 2 * FILE_NAME_MAX) {
+    if (filepath >= corrected_filename && filepath < corrected_filename + 2 * FILE_PATH_MAX) {
         // File location already corrected, skip
         if (!dir || !*dir) {
             return filepath;
         }
         backup_offset = filepath - corrected_filename;
-        snprintf(backup, 2 * FILE_NAME_MAX - backup_offset, "%s", filepath);
+        snprintf(backup, 2 * FILE_PATH_MAX - backup_offset, "%s", filepath);
         filepath = backup;
     }
 
@@ -146,7 +146,7 @@ static const char *get_case_corrected_file(const char *dir, const char *filepath
         dir_skip = 2;
     }
     dir_len = strlen(dir);
-    snprintf(corrected_filename, 2 * FILE_NAME_MAX, "%s", dir);
+    snprintf(corrected_filename, 2 * FILE_PATH_MAX, "%s", dir);
     if (dir_len) {
         if (dir[dir_len - 1] != '/') {
             corrected_filename[dir_len] = '/';
@@ -154,7 +154,7 @@ static const char *get_case_corrected_file(const char *dir, const char *filepath
         }
     }
 
-    snprintf(&corrected_filename[dir_len], 2 * FILE_NAME_MAX - dir_len, "%s", filepath);
+    snprintf(&corrected_filename[dir_len], 2 * FILE_PATH_MAX - dir_len, "%s", filepath);
 
     FILE *fp = file_open(corrected_filename, "rb");
     if (fp) {
@@ -164,7 +164,7 @@ static const char *get_case_corrected_file(const char *dir, const char *filepath
 
     if (!platform_file_manager_should_case_correct_file()) {
         if (filepath == backup) {
-            snprintf(corrected_filename + backup_offset, 2 * FILE_NAME_MAX - backup_offset, "%s", backup);
+            snprintf(corrected_filename + backup_offset, 2 * FILE_PATH_MAX - backup_offset, "%s", backup);
         }
         return 0;
     }
@@ -183,7 +183,7 @@ static const char *get_case_corrected_file(const char *dir, const char *filepath
         *slash = 0;
         if (!correct_case(corrected_filename, &corrected_filename[path_offset], TYPE_DIR)) {
             if (filepath == backup) {
-                snprintf(corrected_filename + backup_offset, 2 * FILE_NAME_MAX - backup_offset, "%s", backup);
+                snprintf(corrected_filename + backup_offset, 2 * FILE_PATH_MAX - backup_offset, "%s", backup);
             }
             return 0;
         }
@@ -197,7 +197,7 @@ static const char *get_case_corrected_file(const char *dir, const char *filepath
     }
     if (!correct_case(corrected_filename, &corrected_filename[path_offset], TYPE_FILE)) {
         if (filepath == backup) {
-            snprintf(corrected_filename + backup_offset, 2 * FILE_NAME_MAX - backup_offset, "%s", backup);
+            snprintf(corrected_filename + backup_offset, 2 * FILE_PATH_MAX - backup_offset, "%s", backup);
         }
         return 0;
     }
@@ -239,8 +239,8 @@ const char *dir_get_file_at_location(const char *filename, int location)
 
 const char *dir_append_location(const char *filename, int location)
 {
-    static char corrected_filename[FILE_NAME_MAX];
-    snprintf(corrected_filename, FILE_NAME_MAX, "%s%s",
+    static char corrected_filename[FILE_PATH_MAX];
+    snprintf(corrected_filename, FILE_PATH_MAX, "%s%s",
         platform_file_manager_get_directory_for_location(location, 0), filename);
     return corrected_filename;
 }

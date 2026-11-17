@@ -27,4 +27,9 @@ enum {
 };
 int map_routing_get_destroyable(int grid_offset);
 
+
+/* Changes only when citizen routing terrain is rebuilt. Main-thread cache key. */
+unsigned map_routing_citizen_revision(void);
+
+
 #endif // MAP_ROUTING_TERRAIN_H

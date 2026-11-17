@@ -138,6 +138,8 @@ typedef enum {
     CONFIG_UI_SHOW_OUTSKIRTS_DESIRABILITY,
     CONFIG_UI_SCROLL_LEGACY_SCROLLBAR,
     CONFIG_FIX_EMPIRE_MAP_DIMENSIONS,
+    CONFIG_KOREAN_FONT,
+    CONFIG_MP_LANGUAGE,
     CONFIG_MAX_ENTRIES
 } config_key;
 
@@ -204,5 +206,16 @@ int config_must_configure_user_directory(void);
  * Save config to file
  */
 void config_save(void);
+
+#define CONFIG_ROOM_OPTION_COUNT 43
+#define CONFIG_ROOM_ALLOW_CHEATS 41
+int config_room_active(void);
+int config_room_index(int key);
+int config_room_max(int i);
+int config_room_default(int i);
+int config_room_value(int i);
+const char *config_room_label(int i);
+int config_room_apply(const int *v);
+void config_room_clear(void);
 
 #endif // CORE_CONFIG_H

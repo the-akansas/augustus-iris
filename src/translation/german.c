@@ -135,7 +135,7 @@ static translation_string all_strings[] = {
     {TR_CONFIG_HEADER_CITY_MANAGEMENT_CHANGES, "Stadtverwaltung"},
     {TR_CONFIG_HEADER_GAMEPLAY_CHANGES, "Schwierigkeit"},
     {TR_CONFIG_HEADER_GENERAL, "Allgemeine Einstellungen"},
-    {TR_CONFIG_HEADER_UI_CHANGES, "Benutzeroberfläche"},
+    {TR_CONFIG_HEADER_UI_CHANGES, "Oberfläche"},
     {TR_CONFIG_HIGHLIGHT_LEGIONS, "Hebe Soldaten bei Berührung mit der Maus hervor"},
     {TR_CONFIG_HOUSES_DONT_EXPAND_INTO_GARDENS, "Häuser erweitern sich nicht in Gärten"},
     {TR_CONFIG_IMMEDIATELY_DELETE_BUILDINGS, "Gebäude sofort zerstören"},
@@ -2424,6 +2424,7 @@ static translation_string all_strings[] = {
     {TR_WIDGET_DN, "Dn"},
     {TR_SIDEBAR_DATE_JUMP_TO_CURRENT, "Klicken um zum laufenden Jahr zu springen"},
     {TR_CONFIG_FIX_EMPIRE_MAP_DIMENSIONS, "Seitenleiste immer zum Rand des Bildschirms erweitern"},
+    {TR_CONFIG_MP_LANGUAGE, "Anzeigesprache"},
 };
 
 void translation_german(const translation_string **strings, int *num_strings)

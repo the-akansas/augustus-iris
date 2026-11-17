@@ -16,6 +16,7 @@
 #include "empire/editor.h"
 #include "empire/empire.h"
 #include "empire/object.h"
+#include "editor/editor.h"
 #include "figure/enemy_army.h"
 #include "figure/figure.h"
 #include "figure/formation.h"
@@ -220,9 +221,9 @@ int game_file_editor_write_scenario(const char *scenario_file)
         image_native_decoration,
         image_native_monument,
         image_native_watchtower,
-        image_group(GROUP_EDITOR_BUILDING_NATIVE),
-        image_group(GROUP_EDITOR_BUILDING_NATIVE) + 2,
-        image_group(GROUP_EDITOR_BUILDING_CROPS),
+        image_group(editor_is_active() ? GROUP_EDITOR_BUILDING_NATIVE : GROUP_BUILDING_NATIVE),
+        image_group(editor_is_active() ? GROUP_EDITOR_BUILDING_NATIVE : GROUP_BUILDING_NATIVE) + 2,
+        image_group(editor_is_active() ? GROUP_EDITOR_BUILDING_CROPS : GROUP_BUILDING_FARM_CROPS),
         image_native_well,
         image_native_large_hut_alt,
         image_native_hut_alt_2,
@@ -237,7 +238,7 @@ int game_file_editor_write_scenario(const char *scenario_file)
     // must be in the editor crops group + variant*5 form (decoded by
     // map_natives_init). Encode for the duration of the write, then restore the
     // aux-based image so the editor keeps displaying the right variant.
-    int editor_crops_base = image_group(GROUP_EDITOR_BUILDING_CROPS);
+    int editor_crops_base = image_group(editor_is_active() ? GROUP_EDITOR_BUILDING_CROPS : GROUP_BUILDING_FARM_CROPS);
     int aux_crops_base = image_aux_is_loaded() ? image_group_aux(GROUP_BUILDING_FARM_CROPS) : 0;
     for (building *b = building_first_of_type(BUILDING_NATIVE_CROPS); b; b = b->next_of_type) {
         if (b->state != BUILDING_STATE_IN_USE && b->state != BUILDING_STATE_CREATED) {

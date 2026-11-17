@@ -312,7 +312,7 @@ void trade_route_save_history(void)
 
 void trade_routes_save_state(buffer *trade_routes)
 {
-    uint8_t *buf_data = malloc(trade_route_array_buffer_size(&routes));
+    uint8_t *buf_data = calloc(1, trade_route_array_buffer_size(&routes));
     buffer_init(trade_routes, buf_data, trade_route_array_buffer_size(&routes));
     save_trade_route_array_state(trade_routes, &routes);
 }
@@ -326,7 +326,7 @@ void trade_routes_load_state(buffer *trade_routes, int version)
 
 void trade_history_save_state(buffer *buf)
 {
-    uint8_t *buf_data = malloc(get_trade_history_buffer_size());
+    uint8_t *buf_data = calloc(1, get_trade_history_buffer_size());
     buffer_init(buf, buf_data, get_trade_history_buffer_size());
 
     buffer_write_u8(buf, years_stored);

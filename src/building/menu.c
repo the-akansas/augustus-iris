@@ -1,4 +1,6 @@
+#include "multiplayer/route_post.h"
 #include "menu.h"
+#include "multiplayer/clock.h"
 
 #include "building/monument.h"
 #include "building/properties.h"
@@ -8,6 +10,7 @@
 #include "game/tutorial.h"
 #include "scenario/allowed_building.h"
 #include "scenario/property.h"
+#include "scenario/empire.h"
 
 #define BUILD_MENU_ITEM_MAX 30
 
@@ -32,7 +35,7 @@ static const building_type MENU_BUILDING_TYPE[BUILD_MENU_MAX][BUILD_MENU_ITEM_MA
     {BUILDING_PALISADE, BUILDING_WATCHTOWER, BUILDING_WALL, BUILDING_TOWER, BUILDING_GATEHOUSE, BUILDING_PREFECTURE,
         BUILDING_MENU_FORT, BUILDING_BARRACKS, BUILDING_MESS_HALL, BUILDING_ARMOURY, BUILDING_MILITARY_ACADEMY, 0},
     {BUILDING_MENU_FARMS, BUILDING_MENU_RAW_MATERIALS, BUILDING_MENU_WORKSHOPS,
-        BUILDING_MARKET, BUILDING_GRANARY, BUILDING_WAREHOUSE, BUILDING_DEPOT, BUILDING_CARAVANSERAI, 0},
+        BUILDING_MARKET, BUILDING_GRANARY, BUILDING_WAREHOUSE, BUILDING_PLAYER_TRADE_POST, BUILDING_DEPOT, BUILDING_CARAVANSERAI, 0},
     {BUILDING_WHEAT_FARM, BUILDING_VEGETABLE_FARM, BUILDING_FRUIT_FARM,
         BUILDING_OLIVE_FARM, BUILDING_VINES_FARM, BUILDING_PIG_FARM, 0},
     {BUILDING_CLAY_PIT, BUILDING_MARBLE_QUARRY, BUILDING_IRON_MINE, BUILDING_TIMBER_YARD, BUILDING_GOLD_MINE,
@@ -138,6 +141,7 @@ static int can_get_required_resource(building_type type)
 
 static int is_building_type_allowed(building_type type)
 {
+    if(type == BUILDING_PLAYER_TRADE_POST)return mp_clock_active() && mp_route_build_peer();
     return scenario_allowed_building(type) && can_get_required_resource(type);
 }
 
@@ -323,6 +327,14 @@ static void disable_resources(int *enabled, building_type type)
 void building_menu_update(void)
 {
     tutorial_build_buttons tutorial_buttons = tutorial_get_build_buttons();
+    int multiplayer_scenario = scenario_is_custom() && scenario_is_open_play() && scenario_empire_id()==SCENARIO_CUSTOM_EMPIRE;
+    for (int city_id = 0; city_id < empire_city_get_array_size(); city_id++) {
+        const empire_city *city = empire_city_get(city_id);
+        if (city->in_use && city->type == EMPIRE_CITY_PLAYER) {
+            multiplayer_scenario = 1;
+            break;
+        }
+    }
     for (int sub = 0; sub < BUILD_MENU_MAX; sub++) {
         for (int item = 0; item < BUILD_MENU_ITEM_MAX; item++) {
             building_type type = MENU_BUILDING_TYPE[sub][item];
@@ -361,6 +373,16 @@ void building_menu_update(void)
                 default:
                     enable_normal(menu_item, type);
                     break;
+            }
+            if (multiplayer_scenario) {
+                /* Creator checklists contain real buildings, not menu containers or tools. */
+                if (type == BUILDING_CLEAR_LAND || type == BUILDING_REPAIR_LAND) {
+                    *menu_item = 1;
+                } else if (building_menu_get_submenu_for_type(type)) {
+                    *menu_item = 1;
+                } else if (!scenario_allowed_building(type)) {
+                    *menu_item = 0;
+                }
             }
             disable_resources(menu_item, type);
 

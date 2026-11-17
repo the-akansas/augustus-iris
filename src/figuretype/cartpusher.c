@@ -1,4 +1,5 @@
 #include "cartpusher.h"
+#include "multiplayer/post_logistics.h"
 
 #include "assets/assets.h"
 #include "building/barracks.h"
@@ -799,6 +800,7 @@ static void warehouseman_initial_action(figure *f, int road_network_id, int remo
 
 void figure_warehouseman_action(figure *f)
 {
+    if(f->mp_source==3 && f->action_state!=FIGURE_ACTION_149_CORPSE && f->action_state!=FIGURE_ACTION_150_ATTACK){figure_image_increase_offset(f,12);mp_post_cart_action(f);set_cart_graphic(f,0);update_image(f);return;}
     figure_image_increase_offset(f, 12);
     f->cart_image_id = 0;
     int percentage_speed = cartpusher_percentage_speed(f);

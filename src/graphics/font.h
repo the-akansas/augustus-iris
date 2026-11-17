@@ -50,6 +50,13 @@ void font_set_encoding(encoding_type encoding);
  */
 const font_definition *font_definition_for(font_t font);
 
+/* Shared placement for plain text, rich text, menu and number drawing. */
+int font_native_ascii_id(font_t font, int character);
+
+int font_native_digit_id(font_t font, int digit);
+
+int font_letter_y_offset(const font_definition *def, uint8_t character, int letter_id);
+
 /**
  * Checks whether the font has a glyph for the passed character
  * @param character Character to check

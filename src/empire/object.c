@@ -287,7 +287,7 @@ void empire_object_save(buffer *buf)
 {
     char *buf_data;
     if (scenario.empire.id != SCENARIO_CUSTOM_EMPIRE) {
-        buf_data = malloc(sizeof(int32_t));
+        buf_data = calloc(1, sizeof(int32_t));
         buffer_init(buf, buf_data, sizeof(int32_t));
         buffer_write_i32(buf, 0);
         return;
@@ -307,7 +307,7 @@ void empire_object_save(buffer *buf)
             // add space for two bytes which are always written even though it's not in_use
         }
     }
-    buf_data = malloc(total_size + sizeof(uint32_t));
+    buf_data = calloc(1, total_size + sizeof(uint32_t));
     buffer_init(buf, buf_data, total_size + sizeof(uint32_t));
     buffer_write_i32(buf, objects.size);
 

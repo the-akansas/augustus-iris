@@ -1052,6 +1052,9 @@ int building_image_get(const building *b)
         }
         case BUILDING_HIGHWAY:
             return assets_get_image_id("Admin_Logistics", "Highway_Placement");
+        case BUILDING_PLAYER_TRADE_POST:
+            return assets_get_image_id("Admin_Logistics", b->size==2 ?
+                "Player Trade Warehouse Legacy" : "Player Trade Warehouse");
         case BUILDING_DEPOT:
             switch (scenario_property_climate()) {
                 case CLIMATE_NORTHERN:
@@ -1142,7 +1145,8 @@ int building_image_get(const building *b)
 
 int building_image_get_for_type(building_type type)
 {
-    building b;
+    building b = {0};
     b.type = type;
+    b.size = building_properties_for_type(type)->size;
     return building_image_get(&b);
 }

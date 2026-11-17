@@ -1,3 +1,4 @@
+#include "multiplayer/clock.h"
 #include "game/speed.h"
 
 #include "building/construction.h"
@@ -47,6 +48,7 @@ int game_speed_get_speed(int index)
 
 int game_speed_get_elapsed_ticks(void)
 {
+    if(mp_clock_active())return mp_clock_budget();
     int last_check_was_valid = data.last_check_was_valid;
     data.last_check_was_valid = 0;
     if (game_state_is_paused()) {

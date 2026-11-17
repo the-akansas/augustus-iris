@@ -124,6 +124,9 @@ typedef struct {
         unsigned short visited_building_type_ids[12];
         unsigned char tourist_rank;
     } tourist;
+    unsigned int mp_contract_id; /* Persisted player caravan contract; zero for ordinary figures. */
+    unsigned char mp_stop_count, mp_leg_quantity, mp_source;
+    struct { unsigned int building_id; unsigned char quantity; } mp_stops[32];
 } figure;
 
 figure *figure_get(unsigned int id);
