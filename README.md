@@ -643,6 +643,10 @@ python build/build_launcher.py --root .                                        #
 
 Add `--release` to the first two for a release build. Each script prints one JSON line with the result.
 
+`Augustus/korean/korean-noto-hd.bin` (123 MB, the high-resolution Korean font) is not in this repository: GitHub does
+not take files over 100 MB. Copy it from a release package into `Augustus/korean/`. Without it the game uses the normal
+Korean font.
+
 ## Tests
 
 ```
